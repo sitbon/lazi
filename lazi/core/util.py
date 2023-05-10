@@ -5,8 +5,6 @@ from importlib.machinery import ModuleSpec
 import sysconfig
 from pathlib import Path
 
-STD_LIB_PATH = sysconfig.get_path("stdlib")
-
 
 def is_stdlib_or_builtin(module: ModuleType | ModuleSpec) -> bool:
     if isinstance(module, ModuleType):
@@ -14,7 +12,7 @@ def is_stdlib_or_builtin(module: ModuleType | ModuleSpec) -> bool:
         return (spec is None) or is_stdlib_or_builtin(spec)
     elif isinstance(module, ModuleSpec):
         origin = module.origin
-        return (origin in (None, "built-in")) or Path(origin).is_relative_to(STD_LIB_PATH)
+        return (origin in (None, "built-in")) or Path(origin).is_relative_to(sysconfig.get_path("stdlib"))
 
     raise TypeError(f"Expected ModuleType or ModuleSpec, got {type(module)}")
 
