@@ -5,6 +5,8 @@ from importlib.machinery import ModuleSpec
 import sysconfig
 from pathlib import Path
 
+from lazi.conf import conf
+
 
 def is_stdlib_or_builtin(module: ModuleType | ModuleSpec) -> bool:
     if isinstance(module, ModuleType):
@@ -22,3 +24,13 @@ def nofail(func: Callable, /, *args, **kwds):
         func(*args, **kwds)
     except Exception as exc:
         print(f"Exception when calling {func.__name__}(): {exc}", file=sys.stderr)
+
+
+if conf.DEBUG_TRACING:
+    def trace(*args, **kwds):
+        kwds.setdefault("file", sys.stderr)
+        print(*args, **kwds)
+
+else:
+    def trace(*args, **kwds):
+        pass
