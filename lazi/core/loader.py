@@ -3,7 +3,7 @@ from contextlib import contextmanager
 import importlib.util
 
 from .record import SpecRecord
-from .util import nofail
+from .util import nofail, trace
 
 __all__ = "Loader",
 
@@ -46,13 +46,15 @@ class Loader(importlib.util.LazyLoader):
         # noinspection PyMethodParameters
         class LazyModule(_LazyModule):
             def __getattribute__(self_, attr):
+                trace("getattribute", self.spec_record.name, attr)
                 assert not self.loaded
 
                 if attr == "__spec__":
                     return self.spec_record.spec
 
                 with self.__load_context__():
-                    return _LazyModule.__getattribute__(self_, attr)
+                    trace("getattribute", self.spec_record.name, attr, "load")
+                    return _LazyModule.__getattribute__(self_, attr)  # Errors here come from the import two lines above.
 
             def __delattr__(self_, attr):
                 return _LazyModule.__delattr__(self_,  attr)
@@ -66,4 +68,4 @@ class Loader(importlib.util.LazyLoader):
         try:
             yield
         finally:
-            self.on_load(self.stack)
+            nofail(self.on_load, self.stack)

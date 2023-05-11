@@ -7,23 +7,24 @@ from importlib.abc import MetaPathFinder
 
 from .record import SpecRecord
 from .loader import Loader
-from .util import nofail
+from .util import nofail, trace
 
 __all__ = "Finder",
 
 
+# noinspection PyMethodMayBeStatic
 class Finder(MetaPathFinder):
     LoaderType: type[Loader] = Loader
     SpecRecordType: type[SpecRecord] = SpecRecord
 
     def on_import(self, spec_record: SpecRecord):
-        pass
+        trace("on_import", spec_record.name, spec_record.spec)
 
     def on_preload(self, spec_record: SpecRecord):
-        pass
+        trace("on_preload", spec_record.name, spec_record.spec)
 
     def on_load(self, spec_record: SpecRecord, stack: tuple[SpecRecord, ...] | None = None):
-        pass
+        trace("on_load", spec_record.name, spec_record.spec)
 
     @classmethod
     def install(cls, *, force: bool = False) -> Finder | None:
@@ -49,6 +50,7 @@ class Finder(MetaPathFinder):
                 sys.meta_path.insert(0, self)
 
     def find_spec(self, fullname, path=None, target=None) -> ModuleSpec | None:
+        trace("find_spec", fullname, path, target)
         record = self.SpecRecordType.register(
             finder=self,
             name=fullname,
