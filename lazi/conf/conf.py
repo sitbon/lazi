@@ -5,7 +5,7 @@ DEBUG_TRACING: bool = False          # Enable debug traces.
 
 SPECR_KEEP_EMPTY: bool = False      # Keep records without a spec.
 SPECR_KEEP_0HOOK: bool = False      # Keep records without a hook.
-SPECR_HOOK_STDLI: bool = False      # Hook stdlib modules.
+SPECR_HOOK_STDBI: bool = False      # Hook stdlib modules.
 
 LOADER_AUTO_DEPS: bool = True       # Also load dependent imports when loading a module.
 

@@ -56,7 +56,7 @@ class SpecRecord:
     def hook(self) -> bool:
         return self.loader is not None or (
             self.spec and self.spec.origin not in (None, "built-in") and
-            (conf.SPECR_HOOK_STDLI or not self.stdlib)
+            (conf.SPECR_HOOK_STDBI or not self.stdlib)
         )
 
     @property
