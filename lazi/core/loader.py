@@ -66,8 +66,14 @@ class Loader(LazyLoader):
 
                 assert self.loaded is False
 
-                if attr == "__spec__":
-                    return self.spec_record.spec
+                if attr in conf.LOADER_FAKE_ATTR:
+                    match attr:
+                        case "__spec__":
+                            return self.spec_record.spec
+                        case "__loader__":
+                            return self
+                        case "__name__":
+                            return self.spec_record.name
 
                 self.pre_load()
 
