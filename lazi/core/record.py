@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from types import ModuleType
-from typing import ClassVar, Callable, ForwardRef
+from typing import ClassVar, ForwardRef
 from dataclasses import dataclass, field
 from importlib.machinery import ModuleSpec
 
@@ -27,6 +27,7 @@ class SpecRecord:
     target: str | None = None
     used: bool = False
     deps: list[SpecRecord, ...] = field(default_factory=list)
+    parent: SpecRecord | None = None
 
     def __post_init__(self):
         self.pre_import()
@@ -79,6 +80,14 @@ class SpecRecord:
             target=target,
         )
 
+    @classmethod
+    def deps_tree(cls) -> dict:
+        return {_: cls.__deps_tree(_) for _ in cls.RECORD.values() if _.parent is None}
+
+    @classmethod
+    def __deps_tree(cls, record: SpecRecord) -> dict:
+        return {_: cls.__deps_tree(_) for _ in record.deps}
+
     def pre_import(self) -> None:
         assert self.used is False
 
@@ -108,8 +117,10 @@ class SpecRecord:
 
     def on_create(self, module: ModuleType) -> None:
         assert self.hook is True and self.used is False
+        assert self.parent is None
 
         if parent := self.__stack__[-1] if self.__stack__ else None:
             parent.deps.append(self)
+            self.parent = parent
 
         return self.finder.on_create(self, module)
