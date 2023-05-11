@@ -1,6 +1,5 @@
 from types import ModuleType
-from importlib.util import LazyLoader, module_from_spec
-
+from importlib.util import LazyLoader
 # noinspection PyUnresolvedReferences,PyProtectedMember
 from importlib.util import _LazyModule  # type: type[ModuleType]
 
@@ -12,7 +11,6 @@ __all__ = "Loader",
 
 
 class Loader(LazyLoader):
-    __module: ModuleType | None = None
     spec_record: SpecRecord
 
     def __init__(self, spec_record: SpecRecord):
@@ -39,24 +37,15 @@ class Loader(LazyLoader):
 
                 trace("dep_load", self.spec_record.name, "->", dep.spec, dep.loader, dep.spec.loader)
 
-                if not dep.hook:
-                    module = module_from_spec(dep.spec)
-                else:
-                    assert dep.loader is not None
-                    module = dep.loader.__module
-
-                getattr(module, "__path__", None)  # Force the module to load.
+                getattr(dep.module, "__path__", None)  # Force the module to load.
 
         return self.spec_record.on_load()
 
     def on_create(self, module: ModuleType):
-        assert self.__module is None
-        self.__module = module
         return self.spec_record.on_create(module)
 
     def exec_module(self, module: ModuleType):
         self.on_create(module)
-
         super().exec_module(module)
 
         # noinspection PyMethodParameters
@@ -79,7 +68,7 @@ class Loader(LazyLoader):
 
                 try:
                     trace("getattribute", self.spec_record.name, attr, "load")
-                    return _LazyModule.__getattribute__(self_, attr)  # Errors here come from the import two lines above.
+                    return _LazyModule.__getattribute__(self_, attr)  # Errors here are from the import two lines above (in trace)
 
                 except Exception:
                     raise
@@ -91,4 +80,3 @@ class Loader(LazyLoader):
                 return _LazyModule.__delattr__(self_,  attr)
 
         module.__class__ = LazyModule
-

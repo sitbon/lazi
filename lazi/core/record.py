@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import sys
 from types import ModuleType
 from typing import ClassVar, ForwardRef
 from dataclasses import dataclass, field
+from importlib.util import module_from_spec
 from importlib.machinery import ModuleSpec
+import warnings
 
 from lazi.conf import conf
-from .util import is_stdlib_or_builtin
+from .util import is_stdlib_or_builtin, trace
 
 __all__ = "SpecRecord",
 
@@ -22,18 +25,22 @@ class SpecRecord:
     name: str
     finder: Finder
     loader: Loader | None = None
+
     spec: ModuleSpec | None = None
+
     path: list[str] | None = None
     target: str | None = None
-    used: bool = False
+
     deps: list[SpecRecord, ...] = field(default_factory=list)
     parent: SpecRecord | None = None
+
+    __used: bool = False
+    __module: ModuleType | None = None
 
     def __post_init__(self):
         self.pre_import()
 
         if self.spec is None:
-            # NOTE: Ellipsis no longer supported, must override __spec__ to create empty spec.
             self.spec = self.finder.__spec__(self.name, self.path, self.target)
 
         if (self.spec or conf.SPECR_KEEP_EMPTY) and (self.hook or conf.SPECR_KEEP_0HOOK):
@@ -46,12 +53,20 @@ class SpecRecord:
             self.loader = self.finder.LoaderType(self)
             self.loader.hook()
         else:
-            self.used = self.spec is not None
+            self.__used = self.spec is not None
 
         self.on_import()
 
     def __hash__(self):
         return hash(self.name)
+
+    @property
+    def used(self) -> bool:
+        return self.__used
+
+    @property
+    def module(self) -> ModuleType | None:
+        return (self.__module or self.__create_module()) if self.spec is not None else None
 
     @property
     def hook(self) -> bool:
@@ -69,18 +84,6 @@ class SpecRecord:
         return self.name in self.RECORD
 
     @classmethod
-    def register(cls, *, finder: Finder, name: str, path: list[str] | None = None, target: str | None = None) -> SpecRecord:
-        if name in cls.RECORD:
-            return cls.RECORD[name]
-
-        return cls(
-            name=name,
-            finder=finder,
-            path=path,
-            target=target,
-        )
-
-    @classmethod
     def deps_tree(cls, filt=lambda _: _.used) -> dict:
         return {_: cls.__deps_tree(_, filt) for _ in cls.RECORD.values() if _.parent is None and filt(_)}
 
@@ -88,36 +91,68 @@ class SpecRecord:
     def __deps_tree(cls, record: SpecRecord, filt) -> dict:
         return {_: cls.__deps_tree(_, filt) for _ in record.deps if filt(_)}
 
-    def pre_import(self) -> None:
-        assert self.used is False
+    @classmethod
+    def register(cls, *, finder: Finder, name: str, path: list[str] | None = None, target: str | None = None) -> SpecRecord:
+        if name in cls.RECORD:
+            return cls.RECORD[name]
+        return cls(name=name, finder=finder, path=path, target=target)
 
+    def __create_module(self) -> ModuleType:
+        trace("create_module", self.name, self.spec.name in sys.modules)
+        assert self.__module is None
+        assert self.spec is not None
+
+        if self.spec.name in sys.modules:
+            self.__module = sys.modules[self.spec.name]
+            self.on_create(self.__module)
+            return self.__module
+
+        self.__module = module_from_spec(self.spec)
+        sys.modules[self.spec.name] = self.__module
+
+        assert self.__module is not None
+
+        if self.loader is not None:
+            self.loader.exec_module(self.__module)
+        else:
+            loader: Loader = self.__module.__loader__
+
+            if not hasattr(loader, "exec_module"):
+                warnings.warn(f"{self.spec.name}.exec_module() not found; falling back to load_module()", ImportWarning)
+                loader.load_module(self.spec.name)
+            else:
+                loader.exec_module(self.__module)
+
+        return self.__module
+
+    def pre_import(self) -> None:
+        assert self.__used is False
         return self.finder.pre_import(self)
 
     def on_import(self) -> None:
-        assert self.used is False or self.hook is False
-
+        assert self.__used is False or self.hook is False
         return self.finder.on_import(self)
 
     def pre_load(self) -> None:
-        assert self.hook is True and self.used is False
-
+        assert self.hook is True and self.__used is False
         self.__stack__.append(self)
-
         return self.finder.pre_load(self)
 
     def on_load(self) -> None:
-        assert self.hook is True and self.used is False
-
-        self.used = True
+        assert self.hook is True and self.__used is False
+        self.__used = True
         pop = self.__stack__.pop()
-
         assert pop is self
-
         return self.finder.on_load(self)
 
     def on_create(self, module: ModuleType) -> None:
-        assert self.hook is True and self.used is False
+        assert self.hook is True and self.__used is False
         assert self.parent is None
+        assert module is not None
+        assert module is self.__module or self.__module is None
+
+        if self.__module is None:
+            self.__module = module
 
         if parent := self.__stack__[-1] if self.__stack__ else None:
             parent.deps.append(self)

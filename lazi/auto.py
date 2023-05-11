@@ -1,9 +1,4 @@
-from lazi.core.record import SpecRecord
-from lazi.core.loader import Loader
-from lazi.core.finder import Finder
+from lazi.core import *
 
-__all__ = "SpecRecord", "Loader", "Finder", "RECORD"
-
-RECORD = SpecRecord.RECORD
-
-Finder.install()
+if not conf.CORE_AUTO_INSTALL and conf.LAZI_AUTO_INSTALL:
+    Finder.install()
