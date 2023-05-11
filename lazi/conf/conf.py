@@ -1,10 +1,14 @@
 """Default configuration for Lazi.
 """
 
+DEBUG_TRACING: bool = False          # Enable debug traces.
+
 SPECR_KEEP_EMPTY: bool = False      # Keep records without a spec.
 SPECR_KEEP_0HOOK: bool = False      # Keep records without a hook.
-SPECR_KEEP_STACK: bool = True       # Keep import stacks in records.
 SPECR_HOOK_STDLI: bool = False      # Hook stdlib modules.
+
+LOADER_AUTO_DEPS: bool = True       # Also load dependent imports when loading a module.
+
 
 def __load():
     import sys
@@ -19,10 +23,10 @@ def __load():
         module = import_module(module_info.name)
 
         for key in (key for key in keys if hasattr(module, key)):
-            dic[key] = getattr(module, key)
+            dic[key] = getattr(module, key)  # TODO (As Needed): Check type and merge accordingly.
 
-    # for key in keys:
-    #     setattr(namespace, key, dic[key])
+    for key in keys:
+        setattr(namespace, key, dic[key])
 
 
 __load()

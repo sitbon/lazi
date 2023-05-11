@@ -1,19 +1,19 @@
 from types import ModuleType
-from contextlib import contextmanager
-import importlib.util
+from importlib.util import LazyLoader, module_from_spec
 
+# noinspection PyUnresolvedReferences,PyProtectedMember
+from importlib.util import _LazyModule  # type: type[ModuleType]
+
+from lazi.conf import conf
 from .record import SpecRecord
-from .util import nofail
+from .util import trace
 
 __all__ = "Loader",
 
-# noinspection PyUnresolvedReferences,PyProtectedMember
-_LazyModule: type[ModuleType] = importlib.util._LazyModule
 
-
-class Loader(importlib.util.LazyLoader):
+class Loader(LazyLoader):
+    __module: ModuleType | None = None
     spec_record: SpecRecord
-    __stack__: list[SpecRecord] = []
 
     def __init__(self, spec_record: SpecRecord):
         self.spec_record = spec_record
@@ -23,47 +23,66 @@ class Loader(importlib.util.LazyLoader):
     def loaded(self) -> bool:
         return self.spec_record.used
 
-    @property
-    def stack(self) -> tuple[SpecRecord, ...]:
-        return tuple(self.__stack__)
-
     def hook(self):
-        assert self.spec_record.hook
+        assert self.spec_record.hook is True
         self.spec_record.spec.loader = self
 
-    def on_preload(self):
-        nofail(self.spec_record.on_preload)
-        self.__stack__.append(self.spec_record)
+    def pre_load(self):
+        return self.spec_record.pre_load()
 
-    def on_load(self, stack: tuple[SpecRecord, ...]):
-        assert not self.loaded
-        assert self.__stack__.pop() is self.spec_record
-        nofail(self.spec_record.on_load, stack)
+    def on_load(self):
+        assert self.loaded is False
 
-    def exec_module(self, module):
+        if conf.LOADER_AUTO_DEPS:
+            for dep in (dep for dep in self.spec_record.deps if dep.spec is not None):
+                # New discovery from this: dep.spec.loader gets changed between its on_create() and here.
+
+                trace("dep_load", self.spec_record.name, "->", dep.spec, dep.loader, dep.spec.loader)
+
+                if not dep.hook:
+                    module = module_from_spec(dep.spec)
+                else:
+                    assert dep.loader is not None
+                    module = dep.loader.__module
+
+                getattr(module, "__path__", None)  # Force the module to load.
+
+        return self.spec_record.on_load()
+
+    def on_create(self, module: ModuleType):
+        assert self.__module is None
+        self.__module = module
+        return self.spec_record.on_create(module)
+
+    def exec_module(self, module: ModuleType):
+        self.on_create(module)
+
         super().exec_module(module)
 
         # noinspection PyMethodParameters
         class LazyModule(_LazyModule):
             def __getattribute__(self_, attr):
-                assert not self.loaded
+                trace("getattribute", self.spec_record.name, attr)
+
+                assert self.loaded is False
 
                 if attr == "__spec__":
                     return self.spec_record.spec
 
-                with self.__load_context__():
-                    return _LazyModule.__getattribute__(self_, attr)
+                self.pre_load()
+
+                try:
+                    trace("getattribute", self.spec_record.name, attr, "load")
+                    return _LazyModule.__getattribute__(self_, attr)  # Errors here come from the import two lines above.
+
+                except Exception:
+                    raise
+
+                finally:
+                    self.on_load()
 
             def __delattr__(self_, attr):
                 return _LazyModule.__delattr__(self_,  attr)
 
         module.__class__ = LazyModule
 
-    @contextmanager
-    def __load_context__(self):
-        self.on_preload()
-
-        try:
-            yield
-        finally:
-            self.on_load(self.stack)
