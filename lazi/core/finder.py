@@ -18,16 +18,31 @@ class Finder(MetaPathFinder):
     LoaderType: type[Loader] = Loader
     SpecRecordType: type[SpecRecord] = SpecRecord
     __finder__: Finder | None = None
+    __count__: int = 0
 
     def __init__(self) -> None:
         assert self.__finder__ is None
 
     @classmethod
-    def install(cls) -> Finder | None:
-        if not isinstance(self := sys.meta_path[0], cls):
-            sys.meta_path.insert(0, self := cls.__finder())
+    def install(cls) -> Finder:
+        if cls.__finder__ is not None:
+            cls.__finder__.__count__ += 1
+            return cls.__finder__
 
+        sys.meta_path.insert(0, self := cls.__finder())
+        self.__count__ += 1
         return self
+
+    @classmethod
+    def uninstall(cls) -> bool:
+        assert cls.__finder__ is not None
+        cls.__finder__.__count__ -= 1
+        assert cls.__finder__.__count__ >= 0
+        if cls.__finder__.__count__ == 0:
+            sys.meta_path.remove(cls.__finder__)
+            cls.__finder__.invalidate_caches()
+            cls.__finder__ = None
+            return True
 
     @classmethod
     def __finder(cls) -> Finder:
