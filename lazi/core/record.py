@@ -81,12 +81,12 @@ class SpecRecord:
         )
 
     @classmethod
-    def deps_tree(cls) -> dict:
-        return {_: cls.__deps_tree(_) for _ in cls.RECORD.values() if _.parent is None}
+    def deps_tree(cls, filt=lambda _: _.used) -> dict:
+        return {_: cls.__deps_tree(_, filt) for _ in cls.RECORD.values() if _.parent is None and filt(_)}
 
     @classmethod
-    def __deps_tree(cls, record: SpecRecord) -> dict:
-        return {_: cls.__deps_tree(_) for _ in record.deps}
+    def __deps_tree(cls, record: SpecRecord, filt) -> dict:
+        return {_: cls.__deps_tree(_, filt) for _ in record.deps if filt(_)}
 
     def pre_import(self) -> None:
         assert self.used is False
