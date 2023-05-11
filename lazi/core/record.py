@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from types import ModuleType
 from typing import ClassVar, Callable, ForwardRef
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from importlib.machinery import ModuleSpec
 
 from lazi.conf import conf
@@ -10,22 +11,28 @@ from .util import is_stdlib_or_builtin
 __all__ = "SpecRecord",
 
 Finder = ForwardRef("Finder")
+Loader = ForwardRef("Loader")
 
 
 @dataclass(slots=True, kw_only=True)
 class SpecRecord:
     RECORD: ClassVar[dict[str, SpecRecord]] = {}
+    __stack__: ClassVar[list[SpecRecord]] = []
 
     name: str
     finder: Finder
-    spec: ModuleSpec | None | Ellipsis = ...
+    loader: Loader | None = None
+    spec: ModuleSpec | None = None
     path: list[str] | None = None
     target: str | None = None
     used: bool = False
-    stack: tuple[SpecRecord, ...] = ()
+    deps: list[SpecRecord, ...] = field(default_factory=list)
 
     def __post_init__(self):
-        if self.spec is ...:
+        self.pre_import()
+
+        if self.spec is None:
+            # NOTE: Ellipsis no longer supported, must override __spec__ to create empty spec.
             self.spec = self.finder.__spec__(self.name, self.path, self.target)
 
         if (self.spec or conf.SPECR_KEEP_EMPTY) and (self.hook or conf.SPECR_KEEP_0HOOK):
@@ -35,16 +42,19 @@ class SpecRecord:
             self.RECORD[self.name] = self
 
         if self.hook:
-            self.finder.LoaderType(self).hook()
+            self.loader = self.finder.LoaderType(self)
+            self.loader.hook()
         else:
             self.used = self.spec is not None
+
+        self.on_import()
 
     def __hash__(self):
         return hash(self.name)
 
     @property
     def hook(self) -> bool:
-        return (
+        return self.loader is not None or (
             self.spec and self.spec.origin not in (None, "built-in") and
             (conf.SPECR_HOOK_STDLI or not self.stdlib)
         )
@@ -69,31 +79,37 @@ class SpecRecord:
             target=target,
         )
 
-    @classmethod
-    def stack_tree(cls, node_factory: Callable = lambda rec: rec) -> dict[SpecRecord, dict[SpecRecord, ...]]:
-        tree = {}
+    def pre_import(self) -> None:
+        assert self.used is False
 
-        for record in (record for record in cls.RECORD.values() if record.hook and record.used):
-            stack = list(record.stack)
-            tree_at = tree
+        return self.finder.pre_import(self)
 
-            while stack:
-                node = node_factory(stack.pop(0))
-                tree_at = tree_at.setdefault(node, {})
+    def on_import(self) -> None:
+        assert self.used is False or self.hook is False
 
-            tree_at[node_factory(record)] = {}
+        return self.finder.on_import(self)
 
-        return tree
+    def pre_load(self) -> None:
+        assert self.hook is True and self.used is False
 
-    def on_preload(self):
-        assert not self.used
-        self.finder.on_preload(self)
+        self.__stack__.append(self)
 
-    def on_load(self, stack: tuple[SpecRecord, ...]):
-        assert not self.used
+        return self.finder.pre_load(self)
+
+    def on_load(self) -> None:
+        assert self.hook is True and self.used is False
+
         self.used = True
-        if conf.SPECR_KEEP_STACK:
-            self.stack = stack
-            self.finder.on_load(self)
-        else:
-            self.finder.on_load(self, stack)
+        pop = self.__stack__.pop()
+
+        assert pop is self
+
+        return self.finder.on_load(self)
+
+    def on_create(self, module: ModuleType) -> None:
+        assert self.hook is True and self.used is False
+
+        if parent := self.__stack__[-1] if self.__stack__ else None:
+            parent.deps.append(self)
+
+        return self.finder.on_create(self, module)

@@ -1,12 +1,13 @@
 """Default configuration for Lazi.
 """
 
-DEBUG_TRACING: bool = False         # Enable debug traces.
+DEBUG_TRACING: bool = False          # Enable debug traces.
 
 SPECR_KEEP_EMPTY: bool = False      # Keep records without a spec.
 SPECR_KEEP_0HOOK: bool = False      # Keep records without a hook.
-SPECR_KEEP_STACK: bool = True       # Keep import stacks in records.
 SPECR_HOOK_STDLI: bool = False      # Hook stdlib modules.
+
+LOADER_AUTO_DEPS: bool = True       # Also load dependent imports when loading a module.
 
 
 def __load():

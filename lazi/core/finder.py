@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import sys
+from types import ModuleType
 from importlib.util import find_spec
 from importlib.machinery import ModuleSpec
 from importlib.abc import MetaPathFinder
 
 from .record import SpecRecord
 from .loader import Loader
-from .util import nofail, trace
+from .util import trace
 
 __all__ = "Finder",
 
@@ -17,14 +18,20 @@ class Finder(MetaPathFinder):
     LoaderType: type[Loader] = Loader
     SpecRecordType: type[SpecRecord] = SpecRecord
 
-    def on_import(self, spec_record: SpecRecord):
-        trace("on_import", spec_record.name, spec_record.spec)
+    def pre_import(self, spec_record: SpecRecord) -> None:
+        return  # trace("pre_import", spec_record.name, spec_record.spec)
 
-    def on_preload(self, spec_record: SpecRecord):
-        trace("on_preload", spec_record.name, spec_record.spec)
+    def on_import(self, spec_record: SpecRecord) -> None:
+        return trace("on_import", spec_record.name, spec_record.spec)
 
-    def on_load(self, spec_record: SpecRecord, stack: tuple[SpecRecord, ...] | None = None):
-        trace("on_load", spec_record.name, spec_record.spec)
+    def pre_load(self, spec_record: SpecRecord) -> None:
+        return trace("pre_load", spec_record.name, spec_record.spec)
+
+    def on_load(self, spec_record: SpecRecord) -> None:
+        return trace("on_load", spec_record.name, spec_record.spec)
+
+    def on_create(self, spec_record: SpecRecord, module: ModuleType) -> None:
+        return trace("on_create", spec_record.name, spec_record.spec, module)
 
     @classmethod
     def install(cls, *, force: bool = False) -> Finder | None:
@@ -50,14 +57,13 @@ class Finder(MetaPathFinder):
                 sys.meta_path.insert(0, self)
 
     def find_spec(self, fullname, path=None, target=None) -> ModuleSpec | None:
-        trace("find_spec", fullname, path, target)
+        # trace("find_spec", fullname, path, target)
         record = self.SpecRecordType.register(
             finder=self,
             name=fullname,
             path=path,
             target=target,
         )
-        nofail(self.on_import, record)
         return record.spec
 
     def invalidate_caches(self) -> None:
