@@ -119,33 +119,18 @@ class Finder(Singleton, MetaPathFinder):
                 debug.trace("on_import", spec_record.name, len(spec_record.path or []), int(spec_record.target or 0))
 
     def pre_load(self, spec_record: SpecRecord) -> None:
-        debug.trace(
-            "pre_load",
-            f"{'+' if spec_record.used else '-'}{spec_record.name}",
-            "<-",
-            f"{'+' if spec_record.parent.used else '-'}{spec_record.parent.name}"
-            if spec_record.parent else None,
-            f"[{'/'.join(('-', '+')[int(sr.used)] + sr.name for sr in spec_record.__stack__)}]"
-        )
+        debug.trace("pre_load", spec_record.debug_repr)
 
     def on_load(self, spec_record: SpecRecord) -> None:
-        debug.trace(
-            "on_load",
-            f"{'+' if spec_record.used else '-'}{spec_record.name}",
-            "<-",
-            f"{'+' if spec_record.parent.used else '-'}{spec_record.parent.name}" if spec_record.parent else None,
-            f"[{'/'.join(('-', '+')[int(sr.used)] + sr.name for sr in spec_record.__stack__)}]"
-        )
+        debug.trace("on_load", spec_record.debug_repr)
 
     def on_load_exc(self, spec_record: SpecRecord, attr: str, exc: Exception) -> None:
-        if not isinstance(exc, AttributeError):
-            debug.trace("on_load_exc", spec_record.name, attr, type(exc).__name__)
+        debug.trace("on_load_exc", spec_record.name, attr, type(exc).__name__, exc)
+        debug.trace("           ", spec_record.debug_repr)
 
     def on_exec(self, spec_record: SpecRecord, module: ModuleType) -> None:
-        debug.trace(
-            "on_exec",
-            f"{'+' if spec_record.used else '-'}{spec_record.name}",
-            "<-",
-            f"{'+' if spec_record.parent.used else '-'}{spec_record.parent.name}" if spec_record.parent else None,
-            f"[{'/'.join(('-', '+')[int(sr.used)] + sr.name for sr in spec_record.__stack__)}]"
-        )
+        debug.trace("on_exec", spec_record.debug_repr)
+
+    def post_exec(self, spec_record: SpecRecord, module: ModuleType) -> bool | None:
+        debug.trace("post_exec", spec_record.debug_repr)
+        return

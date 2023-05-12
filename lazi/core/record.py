@@ -65,6 +65,12 @@ class SpecRecord:
         return hash(self.name)
 
     @property
+    def debug_repr(self):
+        return (f"{'+' if self.used else '-'}{self.name} <- " +
+                (f"{'+' if self.parent.used else '-'}{self.parent.name} " if self.parent else "* ") +
+                f"[{'/'.join(('-', '+')[int(sr.used)] + sr.name for sr in self.__stack__)}]")
+
+    @property
     def used(self) -> bool:
         return self.__used
 
@@ -188,3 +194,7 @@ class SpecRecord:
             self.parent = parent
 
         self.finder.on_exec(self, module)
+
+    def post_exec(self, module: ModuleType) -> bool | None:
+        if self.finder.post_exec(self, module) or self.parent is not None and self.parent.used:
+            return True

@@ -29,42 +29,17 @@ class Loader(LazyLoader):
     def pre_load(self):
         self.spec_record.pre_load()
 
-        # if conf.LOADER_AUTO_DEPS:
-        #     for dep in (dep for dep in self.spec_record.deps if dep.spec is not None and not dep.used):
-        #         debug.trace("dep_load", self.spec_record.name, "->", dep.name, dep.used, dep.spec.name in sys.modules)
-        #
-        #         try:
-        #             getattr(dep.module, "__dict__", None)  # Force the module to load.
-        #         except Exception as exci:
-        #             debug.trace("dep_load[recursive-exc]", self.spec_record.name, "->", dep.name)
-        #             debug.trace(" " * 23, "  ", f"{type(exci).__name__}:", exci)
-        #             debug.trace(" " * 23, "  ", "self.spec:", self.spec_record.spec)
-        #             debug.trace(" " * 23, "  ", "dep.spec:", dep.spec)
-        #             pass
-
     def on_load(self):
         self.spec_record.on_load()
-
-        # if conf.LOADER_AUTO_DEPS:
-        #     for dep in (dep for dep in self.spec_record.deps if dep.spec is not None and not dep.used):
-        #         debug.trace("dep_load", self.spec_record.name, "->", dep.name, dep.used, dep.spec.name in sys.modules)
-        #
-        #         try:
-        #             getattr(dep.module, "__dict__", None)  # Force the module to load.
-        #         except Exception as exci:
-        #             debug.trace("dep_load[recursive-exc]", self.spec_record.name, "->", dep.name)
-        #             debug.trace(" " * 23, "  ", f"{type(exci).__name__}:", exci)
-        #             debug.trace(" " * 23, "  ", "self.spec:", self.spec_record.spec)
-        #             debug.trace(" " * 23, "  ", "dep.spec:", dep.spec)
-        #             pass
-
-        # self.spec_record.on_load()
 
     def on_load_exc(self, attr, exc):
         return self.spec_record.on_load_exc(attr, exc)
 
     def on_exec(self, module: ModuleType):
         return self.spec_record.on_exec(module)
+
+    def post_exec(self, module: ModuleType) -> bool:
+        return self.spec_record.post_exec(module)
 
     def exec_module(self, module: ModuleType):
         # TODO(?): Detect recursion issues.
@@ -106,15 +81,9 @@ class Loader(LazyLoader):
                     debug.trace("getattribute", self.spec_record.name, attr, "<load>")
                     valu = _LazyModule.__getattribute__(_, attr)
 
-                except ImportError as exc:
-                    debug.trace("on_load_exc", self.spec_record.name, attr, "<import-error>")
-                    debug.trace(" " * 14, '/'.join(('-', '+')[int(sr.used)] + sr.name for sr in self.spec_record.__stack__))
-                    self.on_load_exc(attr, exc)
-                    raise
-
                 except Exception as exc:
                     self.on_load_exc(attr, exc)
-                    raise
+                    raise AttributeError(attr) from exc
 
                 else:
                     self.on_load()
@@ -125,8 +94,8 @@ class Loader(LazyLoader):
 
         module.__class__ = LazyModule
 
-        if self.spec_record.parent is not None and self.spec_record.parent.used:
+        if self.post_exec(module) and conf.LOADER_AUTO_DEPS:
             # Bypass lazy loading in recursive situations (called here indirectly between pre_load and on_load).
-            debug.trace("exec_module", self.spec_record.name, "<bypass>")
+            debug.trace("exec_module", self.spec_record.name, "<force>")
             # return self.spec_record.loader.exec_module(module)
             getattr(module, "__dict__", None)  # Force the module to load.
