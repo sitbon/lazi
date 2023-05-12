@@ -74,14 +74,14 @@ class SpecRecord:
             return None
 
         if not self.__used and self.spec.name in sys.modules:
+            # This shouldn't happen anymore now that __used is set within on_exec().
             debug.trace("module[unused-in-sys]", self.spec.name, self.__module is sys.modules[self.spec.name])
+            assert self.__module is sys.modules[self.spec.name]
             self.__used = True  # Causes recursive-exc unless Loader.on_load() skips dep.used records.
-            # ^ TODO: Determine whether this is needed or bad.
-            self.__module = sys.modules[self.spec.name]
             return self.__module
 
         return (
-            self.__module if self.has_module
+            self.__module if self.__module is not None
             else self.__create_module()
         )
 
