@@ -30,5 +30,10 @@ def test_django_db_agg():
     from django.db.models.aggregates import __all__
 
 
+def test_django_tlz():
+    import lazi.auto
+    from tlz import comp
+
+
 if __name__ == '__main__':
     test_django_db_agg()

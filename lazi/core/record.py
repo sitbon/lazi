@@ -69,6 +69,11 @@ class SpecRecord:
         return self.__used
 
     @property
+    def _module(self):
+        """Access the module without creating it."""
+        return self._module
+
+    @property
     def module(self) -> ModuleType | None:
         if self.spec is None:
             return None
@@ -151,16 +156,17 @@ class SpecRecord:
         assert self.hook is True
         assert self.__used is False
 
-        self.finder.pre_load(self)
         self.__stack__.append(self)
+        self.__used = True
+
+        self.finder.pre_load(self)
 
     def on_load(self) -> None:
         assert self.hook is True
-        assert self.__used is False
+        assert self.__used is True
 
         pop = self.__stack__.pop()
         assert pop is self
-        self.__used = True
 
         self.finder.on_load(self)
 
@@ -181,4 +187,4 @@ class SpecRecord:
             parent.deps.append(self)
             self.parent = parent
 
-        return self.finder.on_exec(self, module)
+        self.finder.on_exec(self, module)

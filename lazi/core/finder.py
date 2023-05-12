@@ -116,14 +116,15 @@ class Finder(Singleton, MetaPathFinder):
             if conf.DEBUG_TRACING > 2:
                 debug.trace("on_import", spec_record.name, spec_record.path, spec_record.spec)
             else:
-                debug.trace("on_import", spec_record.name, repr(bool(spec_record.path)), repr(bool(spec_record.target)))
+                debug.trace("on_import", spec_record.name, len(spec_record.path or []), int(spec_record.target or 0))
 
     def pre_load(self, spec_record: SpecRecord) -> None:
         debug.trace(
             "pre_load",
             f"{'+' if spec_record.used else '-'}{spec_record.name}",
             "<-",
-            f"{'+' if spec_record.parent.used else '-'}{spec_record.parent.name}" if spec_record.parent else None,
+            f"{'+' if spec_record.parent.used else '-'}{spec_record.parent.name}"
+            if spec_record.parent else None,
             f"[{'/'.join(('-', '+')[int(sr.used)] + sr.name for sr in spec_record.__stack__)}]"
         )
 
