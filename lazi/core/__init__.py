@@ -10,8 +10,8 @@ __all__ = (
 )
 
 RECORD = SpecRecord.RECORD
-used = SpecRecord.RECORD_USED
-used_count = SpecRecord.RECORD_USED_COUNT
+used = lambda: SpecRecord.RECORD_USED
+used_count = lambda: SpecRecord.RECORD_USED_COUNT
 tree = SpecRecord.deps_tree
 lazy = Finder.lazy_module
 record = Finder.lazy_record

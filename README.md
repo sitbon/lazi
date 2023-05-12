@@ -25,8 +25,8 @@ python example.py
 ```
 
 ```python
-5
-197
+0
+211
 ```
 
 ```python
@@ -41,7 +41,7 @@ print(lazi.used_count())                # Module was lazy loaded.
 ```
 
 ```python
-1
+0
 2
 ```
 

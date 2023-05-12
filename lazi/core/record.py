@@ -9,7 +9,7 @@ from importlib.machinery import ModuleSpec
 import warnings
 
 from lazi.conf import conf
-from lazi.util import debug, is_stdlib_or_builtin
+from lazi.util import classproperty, debug, is_stdlib_or_builtin
 
 __all__ = "SpecRecord",
 
@@ -37,8 +37,13 @@ class SpecRecord:
     __used: bool = False
     __module: ModuleType | None = None
 
-    RECORD_USED = classmethod(lambda cls: (_ for _ in cls.RECORD.values() if _.used))
-    RECORD_USED_COUNT = classmethod(lambda cls: sum(1 for _ in cls.RECORD_USED()))
+    @classproperty
+    def RECORD_USED(self):
+        return (record for record in self.RECORD.values() if record.used)
+
+    @classproperty
+    def RECORD_USED_COUNT(self):
+        return sum(1 for rec in self.RECORD_USED)
 
     def __post_init__(self):
         self.pre_import()
