@@ -7,6 +7,7 @@ from importlib.machinery import ModuleSpec
 from importlib.abc import MetaPathFinder
 from contextlib import contextmanager
 
+from lazi.conf import conf
 from lazi.util import Singleton, debug
 from .record import SpecRecord
 from .loader import Loader
@@ -18,7 +19,7 @@ class Finder(Singleton, MetaPathFinder):
     LoaderType: type[Loader] = Loader
     SpecRecordType: type[SpecRecord] = SpecRecord
     __count__: int = 0
-    __stack__: list[SpecRecord] = []
+    __skip__: int = 0
 
     @classmethod
     @contextmanager
@@ -74,13 +75,16 @@ class Finder(Singleton, MetaPathFinder):
         return (self := cls.__instance__).SpecRecordType.register(finder=self, name=name, path=path, target=target)
 
     def find_spec(self, fullname, path=None, target=None) -> ModuleSpec | None:
+        if self.__skip__:
+            return None
+
         if not self.__count__:
             return None
 
-        record = self.SpecRecordType.register(finder=self, name=fullname, path=path, target=target)
+        if conf.DEBUG_TRACING > 1:
+            debug.trace(f"find_spec {fullname!r} {path!r} {target!r}")
 
-        if record in self.__stack__:
-            return None
+        record = self.SpecRecordType.register(finder=self, name=fullname, path=path, target=target)
 
         return record.spec
 
@@ -92,36 +96,55 @@ class Finder(Singleton, MetaPathFinder):
 
         TODO: Determine if passing package to find_spec would help. If so, where from?
         """
-        if record in self.__stack__:
-            return record.spec
-
-        self.__stack__.append(record)
+        self.__skip__ += 1
 
         try:
             return find_spec(record.name)
 
         finally:
-            pop = self.__stack__.pop()
-            assert pop is record
+            self.__skip__ -= 1
 
     def invalidate_caches(self) -> None:
         self.SpecRecordType.RECORD.clear()
 
     def pre_import(self, spec_record: SpecRecord) -> None:
-        return  # debug.trace("pre_import", spec_record.name, spec_record.spec)
+        if conf.DEBUG_TRACING > 2:
+            debug.trace("pre_import", spec_record.name, spec_record.spec)
 
     def on_import(self, spec_record: SpecRecord) -> None:
-        return debug.trace("on_import", spec_record.name, spec_record.path, spec_record.spec)
+        if spec_record.hook or conf.DEBUG_TRACING > 1:
+            if conf.DEBUG_TRACING > 2:
+                debug.trace("on_import", spec_record.name, spec_record.path, spec_record.spec)
+            else:
+                debug.trace("on_import", spec_record.name, repr(bool(spec_record.path)), repr(bool(spec_record.target)))
 
     def pre_load(self, spec_record: SpecRecord) -> None:
-        return debug.trace("pre_load", spec_record.name)
+        debug.trace(
+            "pre_load",
+            f"{'+' if spec_record.used else '-'}{spec_record.name}",
+            "<-",
+            f"{'+' if spec_record.parent.used else '-'}{spec_record.parent.name}" if spec_record.parent else None,
+            f"[{'/'.join(('-', '+')[int(sr.used)] + sr.name for sr in spec_record.__stack__)}]"
+        )
 
     def on_load(self, spec_record: SpecRecord) -> None:
-        return debug.trace("on_load", spec_record.name)
+        debug.trace(
+            "on_load",
+            f"{'+' if spec_record.used else '-'}{spec_record.name}",
+            "<-",
+            f"{'+' if spec_record.parent.used else '-'}{spec_record.parent.name}" if spec_record.parent else None,
+            f"[{'/'.join(('-', '+')[int(sr.used)] + sr.name for sr in spec_record.__stack__)}]"
+        )
 
-    def on_exec_exc(self, spec_record: SpecRecord, exc: Exception) -> None:
+    def on_load_exc(self, spec_record: SpecRecord, attr: str, exc: Exception) -> None:
         if not isinstance(exc, AttributeError):
-            return debug.trace("on_exec_exc", spec_record.name, type(exc).__name__, exc)
+            debug.trace("on_load_exc", spec_record.name, attr, type(exc).__name__)
 
     def on_exec(self, spec_record: SpecRecord, module: ModuleType) -> None:
-        return debug.trace("on_exec", spec_record.name)
+        debug.trace(
+            "on_exec",
+            f"{'+' if spec_record.used else '-'}{spec_record.name}",
+            "<-",
+            f"{'+' if spec_record.parent.used else '-'}{spec_record.parent.name}" if spec_record.parent else None,
+            f"[{'/'.join(('-', '+')[int(sr.used)] + sr.name for sr in spec_record.__stack__)}]"
+        )

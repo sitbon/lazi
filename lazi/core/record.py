@@ -8,8 +8,8 @@ from importlib.util import module_from_spec
 from importlib.machinery import ModuleSpec
 import warnings
 
-from lazi.util import debug, is_stdlib_or_builtin
 from lazi.conf import conf
+from lazi.util import debug, is_stdlib_or_builtin
 
 __all__ = "SpecRecord",
 
@@ -72,13 +72,6 @@ class SpecRecord:
     def module(self) -> ModuleType | None:
         if self.spec is None:
             return None
-
-        if not self.__used and self.spec.name in sys.modules:
-            # This shouldn't happen anymore now that __used is set within on_exec().
-            debug.trace("module[unused-in-sys]", self.spec.name, self.__module is sys.modules[self.spec.name])
-            assert self.__module is sys.modules[self.spec.name]
-            self.__used = True  # Causes recursive-exc unless Loader.on_load() skips dep.used records.
-            return self.__module
 
         return (
             self.__module if self.__module is not None
@@ -148,27 +141,33 @@ class SpecRecord:
 
     def pre_import(self) -> None:
         assert self.__used is False
-        return self.finder.pre_import(self)
+        self.finder.pre_import(self)
 
     def on_import(self) -> None:
         assert self.__used is False or self.hook is False
-        return self.finder.on_import(self)
+        self.finder.on_import(self)
 
     def pre_load(self) -> None:
         assert self.hook is True
+        assert self.__used is False
+
+        self.finder.pre_load(self)
         self.__stack__.append(self)
-        return self.finder.pre_load(self)
 
     def on_load(self) -> None:
         assert self.hook is True
-        pop = self.__stack__.pop()
-        assert pop is self
-        return self.finder.on_load(self)
+        assert self.__used is False
 
-    def on_exec_exc(self, exc: Exception) -> None:
         pop = self.__stack__.pop()
         assert pop is self
-        return self.finder.on_exec_exc(self, exc)
+        self.__used = True
+
+        self.finder.on_load(self)
+
+    def on_load_exc(self, attr: str, exc: Exception) -> None:
+        pop = self.__stack__.pop()
+        assert pop is self
+        self.finder.on_load_exc(self, attr, exc)
 
     def on_exec(self, module: ModuleType) -> None:
         assert self.hook is True and self.__used is False
@@ -176,17 +175,10 @@ class SpecRecord:
         assert module is not None
         assert module is self.__module or self.__module is None
 
-        self.__used = True
+        self.__module = module
 
-        if self.__module is None:
-            self.__module = module
+        if parent := self.__stack__[-1] if self.__stack__ else None:
+            parent.deps.append(self)
+            self.parent = parent
 
-        if not self.parent:
-            if parent := self.__stack__[-1] if self.__stack__ else None:
-                parent.deps.append(self)
-                self.parent = parent
-
-            return self.finder.on_exec(self, module)
-
-        if self not in self.parent.deps:
-            return self.finder.on_exec(self, module)
+        return self.finder.on_exec(self, module)
