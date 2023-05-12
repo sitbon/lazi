@@ -89,6 +89,11 @@ class Loader(LazyLoader):
                     self.on_load()
                     return valu
 
+                finally:
+                    if mdic.get("__class__", LazyModule) is LazyModule:
+                        self.spec_record.spec.loader = self
+                        mdic["__loader__"] = self
+
             def __delattr__(_, attr):
                 return _LazyModule.__delattr__(_,  attr)
 
