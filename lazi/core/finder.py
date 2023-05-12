@@ -18,6 +18,7 @@ class Finder(Singleton, MetaPathFinder):
     LoaderType: type[Loader] = Loader
     SpecRecordType: type[SpecRecord] = SpecRecord
     __count__: int = 0
+    __stack__: list[SpecRecord] = []
 
     @classmethod
     @contextmanager
@@ -76,37 +77,25 @@ class Finder(Singleton, MetaPathFinder):
         return None if not self.__count__ else \
             self.SpecRecordType.register(finder=self, name=fullname, path=path, target=target).spec
 
-    # def __spec__(self, fullname, path=None, target=None, *, record: SpecRecord | None = None) -> ModuleSpec | None:
-    #     meta_path = False
-    #
-    #     try:
-    #         sys.meta_path.remove(self)
-    #         meta_path = True
-    #     except ValueError:
-    #         pass
-    #
-    #     try:
-    #         return find_spec(fullname)
-    #
-    #     finally:
-    #         if meta_path:
-    #             sys.meta_path.insert(0, self)
+    def import_spec(self, record: SpecRecord) -> ModuleSpec | None:
+        """
+        Import a module spec, if possible. Triggers recursive lazy loading.
 
-    def __spec__(self, fullname, path=None, target=None, *, record: SpecRecord | None = None) -> ModuleSpec | None:
-        meta_path = False
+        This is normally only called via SpecRecord.register() when a new record is created.
+
+        TODO: Determine if passing package to find_spec would help. If so, where from?
+        """
+        if record in self.__stack__:
+            return None
+
+        self.__stack__.append(record)
 
         try:
-            sys.meta_path.remove(self)
-            meta_path = True
-        except ValueError:
-            pass
-
-        try:
-            return find_spec(fullname)
+            return find_spec(record.name)
 
         finally:
-            if meta_path:
-                sys.meta_path.insert(0, self)
+            pop = self.__stack__.pop()
+            assert pop is record
 
     def invalidate_caches(self) -> None:
         self.SpecRecordType.RECORD.clear()

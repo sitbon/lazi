@@ -44,7 +44,7 @@ class SpecRecord:
         self.pre_import()
 
         if self.spec is None:
-            self.spec = self.finder.__spec__(self.name, self.path, self.target, record=self)
+            self.spec = self.finder.import_spec(self)
 
         if (self.spec or conf.SPECR_KEEP_EMPTY) and (self.hook or conf.SPECR_KEEP_0HOOK):
             if self.name in self.RECORD:
