@@ -11,12 +11,24 @@ def test_django_test_auto():
 
     import lazi.auto
     import django.test
-    print(lazi.used_count())
     TestCase = django.test.TestCase
-    print(lazi.used_count())
 
 
 def test_django_template_auto():
     import lazi.auto
     from django.template import Template
-    print(lazi.used_count())
+
+
+def test_django_math():
+    import lazi.auto
+    from django.db.models.functions import math
+
+
+def test_django_db_agg():
+    """Likely source of problems in above test."""
+    import lazi.auto
+    from django.db.models.aggregates import __all__
+
+
+if __name__ == '__main__':
+    test_django_db_agg()

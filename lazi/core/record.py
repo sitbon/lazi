@@ -58,7 +58,8 @@ class SpecRecord:
         else:
             self.__used = self.spec is not None
 
-        self.on_import()
+        if self.spec is not None:
+            self.on_import()
 
     def __hash__(self):
         return hash(self.name)
@@ -73,7 +74,9 @@ class SpecRecord:
             return None
 
         if not self.__used and self.spec.name in sys.modules:
-            debug.trace("module[unused-in-sys]", self.spec.name, self.__module, sys.modules[self.spec.name])
+            debug.trace("module[unused-in-sys]", self.spec.name, self.__module is sys.modules[self.spec.name])
+            self.__used = True  # Causes recursive-exc unless Loader.on_load() skips dep.used records.
+            # ^ TODO: Determine whether this is needed or bad.
             self.__module = sys.modules[self.spec.name]
             return self.__module
 
@@ -122,7 +125,7 @@ class SpecRecord:
 
         if self.spec.name in sys.modules:
             self.__module = sys.modules[self.spec.name]
-            self.on_create(self.__module)
+            self.on_exec(self.__module)
             return self.__module
 
         self.__module = module_from_spec(self.spec)
@@ -152,28 +155,38 @@ class SpecRecord:
         return self.finder.on_import(self)
 
     def pre_load(self) -> None:
-        assert self.hook is True and self.__used is False
+        assert self.hook is True
         self.__stack__.append(self)
         return self.finder.pre_load(self)
 
-    def on_load(self, exc=None) -> None:
-        assert self.hook is True and self.__used is False
-        self.__used = True
+    def on_load(self) -> None:
+        assert self.hook is True
         pop = self.__stack__.pop()
         assert pop is self
-        return self.finder.on_load(self, exc=exc)
+        return self.finder.on_load(self)
 
-    def on_create(self, module: ModuleType) -> None:
+    def on_exec_exc(self, exc: Exception) -> None:
+        pop = self.__stack__.pop()
+        assert pop is self
+        return self.finder.on_exec_exc(self, exc)
+
+    def on_exec(self, module: ModuleType) -> None:
         assert self.hook is True and self.__used is False
-        assert self.parent is None
+        assert self.parent is None or (self in self.parent.deps and self in self.__stack__)
         assert module is not None
         assert module is self.__module or self.__module is None
+
+        self.__used = True
 
         if self.__module is None:
             self.__module = module
 
-        if parent := self.__stack__[-1] if self.__stack__ else None:
-            parent.deps.append(self)
-            self.parent = parent
+        if not self.parent:
+            if parent := self.__stack__[-1] if self.__stack__ else None:
+                parent.deps.append(self)
+                self.parent = parent
 
-        return self.finder.on_create(self, module)
+            return self.finder.on_exec(self, module)
+
+        if self not in self.parent.deps:
+            return self.finder.on_exec(self, module)

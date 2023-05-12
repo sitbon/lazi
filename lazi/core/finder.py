@@ -74,8 +74,15 @@ class Finder(Singleton, MetaPathFinder):
         return (self := cls.__instance__).SpecRecordType.register(finder=self, name=name, path=path, target=target)
 
     def find_spec(self, fullname, path=None, target=None) -> ModuleSpec | None:
-        return None if not self.__count__ else \
-            self.SpecRecordType.register(finder=self, name=fullname, path=path, target=target).spec
+        if not self.__count__:
+            return None
+
+        record = self.SpecRecordType.register(finder=self, name=fullname, path=path, target=target)
+
+        if record in self.__stack__:
+            return None
+
+        return record.spec
 
     def import_spec(self, record: SpecRecord) -> ModuleSpec | None:
         """
@@ -86,7 +93,7 @@ class Finder(Singleton, MetaPathFinder):
         TODO: Determine if passing package to find_spec would help. If so, where from?
         """
         if record in self.__stack__:
-            return None
+            return record.spec
 
         self.__stack__.append(record)
 
@@ -109,8 +116,12 @@ class Finder(Singleton, MetaPathFinder):
     def pre_load(self, spec_record: SpecRecord) -> None:
         return debug.trace("pre_load", spec_record.name)
 
-    def on_load(self, spec_record: SpecRecord, exc=None) -> None:
-        return debug.trace("on_load", spec_record.name, exc)
+    def on_load(self, spec_record: SpecRecord) -> None:
+        return debug.trace("on_load", spec_record.name)
 
-    def on_create(self, spec_record: SpecRecord, module: ModuleType) -> None:
-        return debug.trace("on_create", spec_record.name, module)
+    def on_exec_exc(self, spec_record: SpecRecord, exc: Exception) -> None:
+        if not isinstance(exc, AttributeError):
+            return debug.trace("on_exec_exc", spec_record.name, type(exc).__name__, exc)
+
+    def on_exec(self, spec_record: SpecRecord, module: ModuleType) -> None:
+        return debug.trace("on_exec", spec_record.name)
