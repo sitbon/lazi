@@ -26,7 +26,7 @@ python example.py
 
 ```python
 5
-211
+197
 ```
 
 ```python
@@ -44,6 +44,31 @@ print(lazi.used_count())                # Module was lazy loaded.
 1
 2
 ```
+
+## Configuration
+
+The `lazi.conf` namespace package contains configuration modules
+that get autoloaded (in import order) by `lazi.conf.conf`.
+It is fully decoupled from the rest of the codebase.
+
+As a result, it's possible configure Lazi by creating `lazi.conf`
+modules in your project (within the `lazi.conf` namespace package),
+and use conf modules provided by other packages.
+
+Configuration is not yet controllable via environment variables,
+but this is planned for the future.
+
+It's also possible to manually change the configuration at runtime,
+with the caveat that some variables may have already been used by
+`lazi.core`. To avoid this, configure Lazi before importing it:
+
+```python
+from lazi.conf import conf
+conf.DEBUG_TRACING = True
+import lazi.auto
+# ...
+```
+
 
 ## Metadata
 

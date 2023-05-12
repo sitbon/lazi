@@ -8,8 +8,8 @@ from importlib.util import module_from_spec
 from importlib.machinery import ModuleSpec
 import warnings
 
+from lazi.util import debug, is_stdlib_or_builtin
 from lazi.conf import conf
-from .util import is_stdlib_or_builtin, trace
 
 __all__ = "SpecRecord",
 
@@ -37,11 +37,14 @@ class SpecRecord:
     __used: bool = False
     __module: ModuleType | None = None
 
+    RECORD_USED = classmethod(lambda cls: (_ for _ in cls.RECORD.values() if _.used))
+    RECORD_USED_COUNT = classmethod(lambda cls: sum(1 for _ in cls.RECORD_USED()))
+
     def __post_init__(self):
         self.pre_import()
 
         if self.spec is None:
-            self.spec = self.finder.__spec__(self.name, self.path, self.target)
+            self.spec = self.finder.__spec__(self.name, self.path, self.target, record=self)
 
         if (self.spec or conf.SPECR_KEEP_EMPTY) and (self.hook or conf.SPECR_KEEP_0HOOK):
             if self.name in self.RECORD:
@@ -66,7 +69,22 @@ class SpecRecord:
 
     @property
     def module(self) -> ModuleType | None:
-        return (self.__module or self.__create_module()) if self.spec is not None else None
+        if self.spec is None:
+            return None
+
+        if not self.__used and self.spec.name in sys.modules:
+            debug.trace("module[unused-in-sys]", self.spec.name, self.__module, sys.modules[self.spec.name])
+            self.__module = sys.modules[self.spec.name]
+            return self.__module
+
+        return (
+            self.__module if self.has_module
+            else self.__create_module()
+        )
+
+    @property
+    def has_module(self) -> bool:
+        return self.__module is not None
 
     @property
     def hook(self) -> bool:
@@ -98,7 +116,7 @@ class SpecRecord:
         return cls(name=name, finder=finder, path=path, target=target)
 
     def __create_module(self) -> ModuleType:
-        trace("create_module", self.name, self.spec.name in sys.modules)
+        debug.trace("create_module", self.name, self.spec.name in sys.modules)
         assert self.__module is None
         assert self.spec is not None
 
@@ -138,12 +156,12 @@ class SpecRecord:
         self.__stack__.append(self)
         return self.finder.pre_load(self)
 
-    def on_load(self) -> None:
+    def on_load(self, exc=None) -> None:
         assert self.hook is True and self.__used is False
         self.__used = True
         pop = self.__stack__.pop()
         assert pop is self
-        return self.finder.on_load(self)
+        return self.finder.on_load(self, exc=exc)
 
     def on_create(self, module: ModuleType) -> None:
         assert self.hook is True and self.__used is False
