@@ -72,7 +72,7 @@ class Finder(Singleton, MetaPathFinder):
 
     @classmethod
     def lazy_record(cls, name: str, path: list[str] | None = None, target: ModuleType | None = None) -> SpecRecord:
-        return (self := cls.__instance__).SpecRecordType.register(finder=self, name=name, path=path, target=target)
+        return (self := cls.__instance__).SpecRecordType.find(finder=self, name=name, path=path, target=target)
 
     def find_spec(self, fullname, path=None, target=None) -> ModuleSpec | None:
         if self.__skip__:
@@ -84,7 +84,7 @@ class Finder(Singleton, MetaPathFinder):
         if conf.DEBUG_TRACING > 1:
             assert None is debug.trace(f"find_spec {fullname!r} {path!r} {target!r}")
 
-        record = self.SpecRecordType.register(finder=self, name=fullname, path=path, target=target)
+        record = self.SpecRecordType.find(finder=self, name=fullname, path=path, target=target)
 
         return record.spec
 
@@ -92,7 +92,7 @@ class Finder(Singleton, MetaPathFinder):
         """
         Import a module spec, if possible. Triggers recursive lazy loading.
 
-        This is normally only called via SpecRecord.register() when a new record is created.
+        This is normally only called via SpecRecord.find() when a new record is created.
 
         TODO: Determine if passing package to find_spec would help. If so, where from?
         """

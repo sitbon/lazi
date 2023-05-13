@@ -37,13 +37,8 @@ class SpecRecord:
     __used: bool = False
     __module: ModuleType | None = None
 
-    @classproperty
-    def RECORD_USED(self):
-        return (record for record in self.RECORD.values() if record.used)
-
-    @classproperty
-    def RECORD_USED_COUNT(self):
-        return sum(1 for rec in self.RECORD_USED)
+    RECORD_USED: ClassVar[set[SpecRecord]] = classproperty(lambda cls: (record for record in cls.RECORD.values() if record.used))
+    RECORD_USED_COUNT: ClassVar[set[SpecRecord]] = classproperty(lambda cls: sum(1 for _ in cls.RECORD_USED))
 
     def __post_init__(self):
         self.pre_import()
@@ -122,7 +117,7 @@ class SpecRecord:
         return {_: cls.__deps_tree(_, filt) for _ in record.deps if filt(_)}
 
     @classmethod
-    def register(cls, *, finder: Finder, name: str, path: list[str] | None = None, target: str | None = None) -> SpecRecord:
+    def find(cls, *, finder: Finder, name: str, path: list[str] | None = None, target: str | None = None) -> SpecRecord:
         if name in cls.RECORD:
             return cls.RECORD[name]
         return cls(name=name, finder=finder, path=path, target=target)
