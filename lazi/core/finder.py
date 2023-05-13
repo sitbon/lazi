@@ -49,7 +49,6 @@ class Finder(Singleton, MetaPathFinder):
 
     def __uninstall(self) -> bool:
         assert None is debug.trace(f"uninstall {self.__class__.__name__}[{self.__count__}]")
-
         assert self.__count__ > 0
         assert self in sys.meta_path
 
@@ -75,32 +74,23 @@ class Finder(Singleton, MetaPathFinder):
         return (self := cls.__instance__).SpecRecordType.find(finder=self, name=name, path=path, target=target)
 
     def find_spec(self, fullname, path=None, target=None) -> ModuleSpec | None:
-        if self.__skip__:
-            return None
-
-        if not self.__count__:
+        if self.__skip__ or not self.__count__:
             return None
 
         if conf.DEBUG_TRACING > 1:
             assert None is debug.trace(f"find_spec {fullname!r} {path!r} {target!r}")
 
-        record = self.SpecRecordType.find(finder=self, name=fullname, path=path, target=target)
-
-        return record.spec
+        return self.SpecRecordType.find(finder=self, name=fullname, path=path, target=target).spec
 
     def import_spec(self, record: SpecRecord) -> ModuleSpec | None:
         """
         Import a module spec, if possible. Triggers recursive lazy loading.
 
         This is normally only called via SpecRecord.find() when a new record is created.
-
-        TODO: Determine if passing package to find_spec would help. If so, where from?
         """
         self.__skip__ += 1
-
         try:
             return find_spec(record.name)
-
         finally:
             self.__skip__ -= 1
 

@@ -96,9 +96,8 @@ class SpecRecord:
     @property
     def hook(self) -> bool:
         return self.loader is not None or (
-            self.spec and self.spec.origin not in (None, "built-in") and
-            (conf.SPECR_HOOK_STDBI or not self.stdlib)
-        )
+                self.spec and self.spec.origin not in (None, "built-in") and
+                (conf.SPECR_HOOK_STDBI or not self.stdlib))
 
     @property
     def stdlib(self) -> bool:
@@ -195,6 +194,6 @@ class SpecRecord:
 
         self.finder.on_exec(self, module)
 
-    def post_exec(self, module: ModuleType) -> bool | None:
-        if self.finder.post_exec(self, module) or self.parent is not None and self.parent.used:
+    def post_exec(self, module: ModuleType | None) -> bool | None:
+        if (module is not None and self.finder.post_exec(self, module)) or self.parent is not None and self.parent.used:
             return True

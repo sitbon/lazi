@@ -40,18 +40,24 @@ class Loader(LazyLoader):
     def on_exec(self, module: ModuleType):
         return self.spec_record.on_exec(module)
 
-    def post_exec(self, module: ModuleType) -> bool:
+    def post_exec(self, module: ModuleType | None) -> bool:
         return self.spec_record.post_exec(module)
 
     def exec_module(self, module: ModuleType):
         assert self.spec_record.spec is not None
         assert not self.used
 
-        mdic = object.__getattribute__(module, "__dict__")
-
         self.on_exec(module)
 
-        # TODO: Early bypass here instead of constructing a LazyModule only to throw it away.
+        # if self.post_exec(None) and conf.LOADER_AUTO_DEPS:
+        #     # TODO(?): Early bypass here instead of constructing a LazyModule only to throw it away.
+        #     assert None is debug.trace("exec_module", self.spec_record.name, "<force-early>")
+        #     module.__spec__.loader = self.loader
+        #     module.__loader__ = self.loader
+        #     # ... ?
+        #     return
+
+        mdic = object.__getattribute__(module, "__dict__")
 
         super().exec_module(module)
 
