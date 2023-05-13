@@ -26,9 +26,12 @@ packages = [
 ]
 
 
+[tool.poetry.dependencies]
+python = ">=3.10"
+
+
 [tool.poetry.group.dev]
 optional = true
-
 [tool.poetry.group.dev.dependencies]
 django = "^4"
 requests = "^2"
@@ -37,10 +40,7 @@ rich = "^13"
 setuptools = "^67"
 pandas = "^2"
 pytest = "^7"
-
-
-[tool.poetry.dependencies]
-python = ">=3.10"
+wagtail = "^5.0"
 
 
 [build-system]
