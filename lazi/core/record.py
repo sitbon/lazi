@@ -128,7 +128,7 @@ class SpecRecord:
         return cls(name=name, finder=finder, path=path, target=target)
 
     def __create_module(self) -> ModuleType:
-        debug.trace("create_module", self.name, self.spec.name in sys.modules)
+        assert None is debug.trace("create_module", self.name, self.spec.name in sys.modules)
         assert self.__module is None
         assert self.spec is not None
 

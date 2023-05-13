@@ -1,6 +1,7 @@
 import sys
 from types import ModuleType
 from importlib.util import LazyLoader
+from importlib.abc import Loader as _Loader
 # noinspection PyUnresolvedReferences,PyProtectedMember
 from importlib.util import _LazyModule  # type: type[ModuleType]
 
@@ -13,6 +14,7 @@ __all__ = "Loader",
 
 class Loader(LazyLoader):
     spec_record: SpecRecord
+    loader: _Loader  # set by LazyLoader
 
     def __init__(self, spec_record: SpecRecord):
         self.spec_record = spec_record
@@ -42,8 +44,6 @@ class Loader(LazyLoader):
         return self.spec_record.post_exec(module)
 
     def exec_module(self, module: ModuleType):
-        # TODO(?): Detect recursion issues.
-
         assert self.spec_record.spec is not None
         assert not self.used
 
@@ -51,34 +51,34 @@ class Loader(LazyLoader):
 
         self.on_exec(module)
 
+        # TODO: Early bypass here instead of constructing a LazyModule only to throw it away.
+
         super().exec_module(module)
 
-        loader_orig = self.spec_record.spec.loader
         self.spec_record.spec.loader = self
         mdic["__loader__"] = self
 
         # noinspection PyMethodParameters
         class LazyModule(_LazyModule):
             def __setattr__(_, key, value):
-                debug.trace("setattribute", self.spec_record.name, key)
+                assert None is debug.trace("setattribute", self.spec_record.name, key)
                 return super().__setattr__(key, value)
 
             def __getattribute__(_, attr):
                 if attr == "__class__" or attr in conf.LOADER_FAKE_ATTR:
                     if attr in mdic:
-                        debug.trace("geyattribute", self.spec_record.name, attr)
                         return mdic[attr]
 
-                    debug.trace("geeattribute", self.spec_record.name, attr)
+                    assert None is debug.trace("geeattribute", self.spec_record.name, attr)
                     raise AttributeError(attr)
 
                 self.pre_load()
 
-                self.spec_record.spec.loader = loader_orig
-                mdic["__loader__"] = loader_orig
+                self.spec_record.spec.loader = self.loader
+                mdic["__loader__"] = self.loader
 
                 try:
-                    debug.trace("getattribute", self.spec_record.name, attr, "<load>")
+                    assert None is debug.trace("getattribute", self.spec_record.name, attr, "<load>")
                     valu = _LazyModule.__getattribute__(_, attr)
 
                 except Exception as exc:
@@ -101,6 +101,6 @@ class Loader(LazyLoader):
 
         if self.post_exec(module) and conf.LOADER_AUTO_DEPS:
             # Bypass lazy loading in recursive situations (called here indirectly between pre_load and on_load).
-            debug.trace("exec_module", self.spec_record.name, "<force>")
+            assert None is debug.trace("exec_module", self.spec_record.name, "<force>")
             # return self.spec_record.loader.exec_module(module)
             getattr(module, "__dict__", None)  # Force the module to load.

@@ -9,6 +9,10 @@ import importlib
     ("os.path", None, ModuleType),
     ("<bad>", None, ModuleNotFoundError),
     ("idna", "requests.packages", ModuleType),
+    ("django.test", None, ModuleType),
+    ("test", "django", ModuleType),
+    ("pandas.core.nanops", None, ModuleType),
+    ("django.db.models.aggregates", "django.db.", ModuleType),
 ])
 def test_import_module(use_lazi, name, package, expected_type):
     match use_lazi:
