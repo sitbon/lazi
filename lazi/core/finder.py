@@ -57,7 +57,7 @@ class Finder(Singleton, MetaPathFinder):
         if self.__count__ == 0:
             sys.meta_path.remove(self)
             self.invalidate_caches()
-            self.__instance__ = None
+            super().__delete__()
             return True
 
         return False

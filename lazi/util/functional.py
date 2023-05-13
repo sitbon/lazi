@@ -22,6 +22,10 @@ class Singleton:
         return self
 
     @classmethod
+    def __delete__(cls):
+        del cls.__instances__[cls]
+
+    @classmethod
     def single(cls, clss: type | None = None, /, *args, **kwds) -> object | Callable[[type], object]:
         """Decorator to create a wrapped singleton type."""
         def wrapper(clss_: type):
@@ -33,7 +37,6 @@ class Singleton:
 
 class SingletonMeta(type, Singleton):
     """Singleton metaclass that does not support args and kwds for __init__()."""
-    __instances__: dict[type, object] = {}
 
     @property
     def __instance__(cls):
