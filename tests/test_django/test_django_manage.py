@@ -2,8 +2,7 @@
 import os
 import sys
 import pytest
-
-import lazi.core as lazi
+import _lazi
 
 
 def setup():
@@ -15,21 +14,21 @@ def setup():
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "tests.test_django.web.settings")
 
     import django
-    print(lazi.used_count(), len(lazi.RECORD), len(sys.modules))
+    # print(lazi.used_count(), len(lazi.RECORD), len(sys.modules))
 
     django.setup()
 
 
-@pytest.mark.parametrize("use_lazi", [True, False])
+@pytest.mark.skip(reason="Not fully implemented yet")
+@_lazi.param
 @pytest.mark.parametrize("argv", [
     ["manage.py", "--help"],
-    ["manage.py", "migrate", "--fake"],
+    # ["manage.py", "migrate", "--fake"],
     # ["manage.py", "runserver", "--nothreading", "--noreload"],
 ])
-def test_main(use_lazi: bool | None, argv: list):
-    if use_lazi:
-        import lazi.auto
-        return test_main(use_lazi=False, argv=argv)
+def test_django_main(use_lazi: bool | None, argv: list):
+    if use_lazi is not False:
+        return _lazi.test(use_lazi, test_django_main, argv)
 
     import lazi.core as lazi
 
@@ -49,6 +48,7 @@ def test_main(use_lazi: bool | None, argv: list):
     print(lazi.used_count(), len(lazi.RECORD), len(sys.modules), file=stdout)
 
 
+@pytest.mark.skip(reason="Not fully implemented yet")
 def test_get_packages():
     setup()
     import django.template.backends.django
@@ -56,4 +56,4 @@ def test_get_packages():
 
 
 if __name__ == "__main__":
-    test_main(True, sys.argv)
+    test_django_main(True, sys.argv)

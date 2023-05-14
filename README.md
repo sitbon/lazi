@@ -1,6 +1,10 @@
 # Lazi: Lazy Imports Everywhere
 
-A lightweight and extensible way to implement lazy imports globally.
+An easy way to implement and track lazy imports globally.
+
+No external dependencies.
+
+**Requres Python 3.11.**
 
 ## Usage:
 
@@ -13,7 +17,7 @@ poetry add lazi
 
 Install django to run, or change the imports.
 """
-import lazi.auto                 # Install import tracking.
+import lazi.auto as lazi         # Install import tracking.
 import django.test               # Import stuff.
 print(lazi.used_count())         # Count loaded modules.
 TestCase = django.test.TestCase  # Trigger lazy loading.
@@ -32,7 +36,7 @@ python example.py
 ```python
 """Manual lazy loading example.
 """
-import lazi.core                        # Import Lazi.
+import lazi.core as lazi                # Import Lazi.
 django = lazi.lazy("django")            # Import stuff.
 django_test = lazi.lazy("django.test")  # Import more stuff.
 print(lazi.used_count())                # Count loaded modules.
@@ -56,7 +60,7 @@ modules in your project (within the `lazi.conf` namespace package),
 and use conf modules provided by other packages.
 
 Configuration is not yet controllable via environment variables,
-but this is planned for the future.
+but this is planned for the future. Update: Supported for DEBUG_TRACING.
 
 It's also possible to manually change the configuration at runtime,
 with the caveat that some variables may have already been used by
@@ -67,24 +71,4 @@ from lazi.conf import conf
 conf.DEBUG_TRACING = True
 import lazi.auto
 # ...
-```
-
-
-## Metadata
-
-Reference for developers: The json dict below contains Python versioning parameters:
-- Soft `min` (ignore rev) & hard `max` compatible versions.
-- Recommended `use` & creator's environment `dev` versions.
-
-```json
-{
-  "python": {
-    "version": {
-      "min": "3.10.11",
-      "max": "3.12",
-      "use": "3.11",
-      "dev": "3.11.2"
-    }
-  }
-}
 ```
