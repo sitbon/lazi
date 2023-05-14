@@ -87,10 +87,9 @@ class Loader(LazyLoader):
                     assert None is debug.trace("getattribute", self.spec_record.name, attr, "<load>")
                     valu = _LazyModule.__getattribute__(_, attr)
 
-                except (ImportError, AttributeError, NameError) as exc:
-                    # NOTE: This is currently untested, but something is still wrong with recursive/circular loading.
-                    self.on_load_exc(attr, exc)
-                    raise
+                # except (AttributeError, NameError) as exc:
+                #     self.on_load_exc(attr, exc)
+                #     raise
 
                 except Exception as exc:
                     self.on_load_exc(attr, exc)
@@ -110,7 +109,7 @@ class Loader(LazyLoader):
 
         module.__class__ = LazyModule
 
-        if self.post_exec(module) and conf.LOADER_AUTO_DEPS:
+        if conf.LOADER_FORCE_ALL or (self.post_exec(module) and conf.LOADER_AUTO_DEPS):
             # Bypass lazy loading in recursive situations (called here indirectly between pre_load and on_load).
             assert None is debug.trace("exec_module", self.spec_record.name, "<force>")
             # return self.spec_record.loader.exec_module(module)

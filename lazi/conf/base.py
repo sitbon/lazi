@@ -13,9 +13,10 @@ CORE_AUTO_INSTALL: bool = False         # Automatically install when importing l
 
 SPECR_KEEP_EMPTY: bool = False          # Keep records without a spec.
 SPECR_KEEP_0HOOK: bool = False          # Keep records without a hook.
-SPECR_HOOK_STDBI: bool = True          # Hook stdlib modules.
+SPECR_HOOK_STDBI: bool = True           # Hook stdlib modules.
 
-LOADER_AUTO_DEPS: bool = True          # Also load dependent imports when loading a module.
+LOADER_AUTO_DEPS: bool = True           # Also load dependent imports when loading a module.
+LOADER_FORCE_ALL: bool = False          # Force all imports to be loaded in exec_module(). Useful for debugging.
 
 LOADER_FAKE_ATTR: tuple = (             # Attributes to fake and avoid loading a module. (__class__ is always faked.)
     "__spec__",                         # - These are the values that the Loader class currently knows how to fake.

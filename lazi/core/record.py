@@ -66,9 +66,7 @@ class SpecRecord:
 
     @property
     def debug_repr(self):
-        return (f"{'+' if self.used else '-'}{self.name} <- " +
-                (f"{'+' if self.parent.used else '-'}{self.parent.name} " if self.parent else "* ") +
-                f"[{'/'.join(('-', '+')[int(sr.used)] + sr.name for sr in self.__stack__)}]")
+        return '/'.join(sr.name + ('-', '')[int(sr.used)] for sr in (self.__stack__ + [self]))
 
     @property
     def used(self) -> bool:
@@ -161,10 +159,10 @@ class SpecRecord:
         assert self.hook is True
         assert self.__used is False
 
+        self.finder.pre_load(self)
+
         self.__stack__.append(self)
         self.__used = True
-
-        self.finder.pre_load(self)
 
     def on_load(self) -> None:
         assert self.hook is True
