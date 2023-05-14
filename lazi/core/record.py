@@ -173,9 +173,14 @@ class SpecRecord:
 
         self.finder.on_load(self)
 
-    def on_load_exc(self, attr: str, exc: Exception) -> None:
-        pop = self.__stack__.pop()
-        assert pop is self
+    def on_load_exc(self, attr: str | None, exc: Exception) -> None:
+        if attr is not None:
+            pop = self.__stack__.pop()
+            assert pop is self
+        else:
+            if self.__stack__ and self.__stack__[-1] is self:
+                self.__stack__.pop()
+
         self.finder.on_load_exc(self, attr, exc)
 
     def on_exec(self, module: ModuleType) -> None:

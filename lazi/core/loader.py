@@ -34,7 +34,7 @@ class Loader(LazyLoader):
     def on_load(self):
         self.spec_record.on_load()
 
-    def on_load_exc(self, attr, exc):
+    def on_load_exc(self, attr: str | None, exc: Exception) -> None:
         return self.spec_record.on_load_exc(attr, exc)
 
     def on_exec(self, module: ModuleType):
@@ -49,13 +49,23 @@ class Loader(LazyLoader):
 
         self.on_exec(module)
 
-        # if self.post_exec(None) and conf.LOADER_AUTO_DEPS:
-        #     # TODO(?): Early bypass here instead of constructing a LazyModule only to throw it away.
-        #     assert None is debug.trace("exec_module", self.spec_record.name, "<force-early>")
-        #     module.__spec__.loader = self.loader
-        #     module.__loader__ = self.loader
-        #     # ... ?
-        #     return
+        if conf.LOADER_FORCE_ALL:
+            # Early bypass here instead of constructing a LazyModule only to throw it away.
+            assert None is debug.trace("exec_module", self.spec_record.debug_repr, "<F>")
+
+            module.__spec__.loader = self.loader
+            module.__loader__ = self.loader
+
+            try:
+                self.pre_load()
+                self.loader.exec_module(module)
+                self.post_exec(module)
+                self.on_load()
+                return
+
+            except Exception as exc:
+                self.on_load_exc(None, exc)
+                raise
 
         mdic = object.__getattribute__(module, "__dict__")
 

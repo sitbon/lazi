@@ -115,7 +115,7 @@ class Finder(Singleton, MetaPathFinder):
             if conf.DEBUG_TRACING > 2:
                 assert None is debug.trace("on_import", spec_record.name, spec_record.path, spec_record.spec)
             else:
-                assert None is debug.trace("on_import", spec_record.name, len(spec_record.path or []), int(spec_record.target or 0))
+                assert None is debug.trace("on_import", spec_record.debug_repr)
 
     def pre_load(self, spec_record: SpecRecord) -> None:
         assert None is debug.trace("pre_load", spec_record.debug_repr)
@@ -123,7 +123,7 @@ class Finder(Singleton, MetaPathFinder):
     def on_load(self, spec_record: SpecRecord) -> None:
         assert None is debug.trace("on_load", spec_record.debug_repr)
 
-    def on_load_exc(self, spec_record: SpecRecord, attr: str, exc: Exception) -> None:
+    def on_load_exc(self, spec_record: SpecRecord, attr: str | None, exc: Exception) -> None:
         assert None is debug.trace("on_load_exc", spec_record.name, attr, type(exc).__name__, exc)
         assert None is debug.trace("           ", spec_record.debug_repr)
 
