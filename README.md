@@ -19,9 +19,9 @@ Install django to run, or change the imports.
 """
 import lazi.auto as lazi         # Install import tracking.
 import django.test               # Import stuff.
-print(lazi.used_count())         # Count loaded modules.
+# print(lazi.used_count())         # Count loaded modules.
 TestCase = django.test.TestCase  # Trigger lazy loading.
-print(lazi.used_count())         # More modules were lazy loaded.
+# print(lazi.used_count())         # More modules were lazy loaded.
 ```
 
 ```shell
@@ -39,9 +39,9 @@ python example.py
 import lazi.core as lazi                # Import Lazi.
 django = lazi.lazy("django")            # Import stuff.
 django_test = lazi.lazy("django.test")  # Import more stuff.
-print(lazi.used_count())                # Count loaded modules.
+# print(lazi.used_count())                # Count loaded modules.
 TestCase = django_test.TestCase         # Trigger lazy loading.
-print(lazi.used_count())                # Module was lazy loaded.
+# print(lazi.used_count())                # Module was lazy loaded.
 ```
 
 ```python

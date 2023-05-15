@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "lazi"
-version = "1.4.0.32"
+version = "1.5.0-simplified1"
 description = "A lightweight and extensible way to implement lazy imports globally."
 authors = ["Phillip Sitbon <phillip.sitbon@gmail.com>"]
 readme = "README.md"
@@ -52,7 +52,7 @@ presto-requests = {git = "https://github.com/sitbon/presto"}
 
 
 [tool.pytest.ini_options]
-addopts = "-v -rA"
+addopts = "-v --no-header -rA"
 cache_dir = ".cache/pytest"
 testpaths = [
     "tests",

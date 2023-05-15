@@ -18,7 +18,8 @@ MODULE_SPEC_ATTR_MAP = dict(
     __path__="submodule_search_locations",
 )
 
-SETATTR_PASS = ("__spec__", "__dict__", "__class__") + tuple(MODULE_SPEC_ATTR_MAP)
+GETATTR_PASS = ("__spec__", "__dict__", "__class__")
+SETATTR_PASS = GETATTR_PASS + tuple(MODULE_SPEC_ATTR_MAP)
 
 
 class Module:
@@ -29,8 +30,10 @@ class Module:
         spec.target = module if module is not None else self
 
     def __getattribute__(self, attr):
+        if attr in GETATTR_PASS:
+            return super().__getattribute__(attr)
+
         spec = super().__getattribute__("__spec__")
-        assert None is debug.trace(f"<get> {spec.name}[.{attr}] <L:{spec.loader_state!r}>")
 
         if attr in MODULE_SPEC_ATTR_MAP:
             match attr:
@@ -56,7 +59,13 @@ class Module:
         if attr in self_dict:
             return super().__getattribute__(attr)
 
-        assert None is debug.trace(f"<attr> {spec.name}[.{attr}] <L:{spec.loader_state!r}>")
+        if spec.target is not self and attr in (module_dict := spec.target.__getattribute__("__dict__")):
+            return module_dict[attr]
+
+        assert None is debug.trace(f"<attr> {spec.name}[.{attr}] <L:{spec.loader_state}>")
+
+        if spec.loader_state is spec.loader.State.LAZY:
+            spec.loader.exec_module(spec.target, lazy=False)
 
         if spec.target is self:
             return super().__getattribute__(attr)
@@ -65,28 +74,23 @@ class Module:
 
     def __setattr__(self, attr, valu):
         spec = super().__getattribute__("__spec__")
-        assert None is debug.trace(
-            f"<set> {spec.name}[.{attr}] = {f'<{valu.name}>' if isinstance(valu, type(spec)) else repr(valu)}"
-        )
+
+        if __debug__ and conf.DEBUG_TRACING > 1:
+            assert None is debug.trace(
+                f"<set> {spec.name}[.{attr}] = " +
+                (f'<{valu.name}>' if isinstance(valu, type(spec)) else repr(valu)) +
+                f" <L:{spec.loader_state}>"
+            )
 
         if attr in SETATTR_PASS:
             return super().__setattr__(attr, valu)
 
         getattr(self, attr)
-
-        if spec.target is self:
-            return super().__setattr__(attr, valu)
-        else:
-            return spec.target.__setattr__(attr, valu)
+        return super().__setattr__(attr, valu) if spec.target is self else spec.target.__setattr__(attr, valu)
 
     def __delattr__(self, attr):
         spec = super().__getattribute__("__spec__")
-        assert None is debug.trace(f"<del> {spec.name}[.{attr}]")
-
+        assert None is debug.trace(f"<del> {spec.name}[.{attr}] <L:{spec.loader_state}>")
         getattr(self, attr)
-
-        if spec.target is self:
-            return super().__delattr__(attr)
-        else:
-            return spec.target.__delattr__(attr)
+        return super().__delattr__(attr) if spec.target is self else spec.target.__delattr__(attr)
 

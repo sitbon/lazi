@@ -3,7 +3,7 @@ import sys
 
 def test_django_version_lazy():
     from lazi.util import debug
-    from lazi.core.hook.finder import Finder
+    from lazi.core.finder import Finder
 
     with Finder() as finder:
         debug.trace("test_django_version_lazy: finder.lazy ->")
@@ -16,7 +16,7 @@ def test_django_version_lazy():
 
 def test_django_version_import():
     from lazi.util import debug
-    from lazi.core.hook.finder import Finder
+    from lazi.core.finder import Finder
 
     with Finder():
         debug.trace("test_django_version_import: import django ->")
