@@ -1,19 +1,23 @@
-import pytest
-import _lazi
 
 
-@_lazi.param
-def test_requests_parse_dict_header(use_lazi):
-    if use_lazi is not False:
-        return _lazi.test(use_lazi, test_requests_parse_dict_header)
+def test_requests_parse_dict_header():
+    from lazi.util import debug
+    from lazi.core.finder import Finder
 
-    from requests.utils import parse_dict_header
+    with Finder() as finder:
+        debug.trace("-> from requests.utils import parse_dict_header ->")
+        from requests.utils import parse_dict_header
+        debug.trace("^- from requests.utils import parse_dict_header -^")
 
 
-@_lazi.param
-def test_requests_presto_import(use_lazi):
-    if use_lazi is not False:
-        return _lazi.test(use_lazi, test_requests_presto_import)
+def test_requests_presto_import():
+    from lazi.util import debug
+    from lazi.core.finder import Finder
 
-    from presto import Presto
-    p = Presto("https://httpbin.org")
+    with Finder() as finder:
+        debug.trace("-> from presto import Presto ->")
+        from presto import Presto
+        debug.trace("^- from presto import Presto -^")
+        debug.trace("-> p = Presto('https://httpbin.org') ->")
+        p = Presto("https://httpbin.org")
+        debug.trace("^- p = Presto('https://httpbin.org') -^")

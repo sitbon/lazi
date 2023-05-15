@@ -1,15 +1,17 @@
-import _lazi
 
 
-@_lazi.param
-def test_rich_fn_import(use_lazi):
-    if use_lazi is not False:
-        import lazi.auto
+def test_rich_fn_import():
+    from lazi.util import debug
+    from lazi.core.finder import Finder
 
-    def setup():
-        from rich import console as rc, pretty, traceback
-        console = rc.Console(color_system="256", force_terminal=True)
-        pretty.install(console=console)
-        traceback.install(console=console)
+    with Finder() as finder:
+        debug.trace("-> setup() ->")
 
-    setup()
+        def setup():
+            from rich import console as rc, pretty, traceback
+            console = rc.Console(color_system="256", force_terminal=True)
+            pretty.install(console=console)
+            traceback.install(console=console)
+
+        setup()
+        debug.trace("^- setup() -^")
