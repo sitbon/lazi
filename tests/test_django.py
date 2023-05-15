@@ -1,4 +1,3 @@
-import sys
 
 
 def test_django_version_lazy():

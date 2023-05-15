@@ -4,7 +4,7 @@ def test_rich_fn_import():
     from lazi.util import debug
     from lazi.core.finder import Finder
 
-    with Finder() as finder:
+    with Finder():
         debug.trace("-> setup() ->")
 
         def setup():

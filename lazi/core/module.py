@@ -30,10 +30,13 @@ class Module:
         spec.target = module if module is not None else self
 
     def __getattribute__(self, attr):
+        spec = super().__getattribute__("__spec__")
+
+        if __debug__ and conf.DEBUG_TRACING > 2:
+            assert None is debug.trace(f"<get> {spec.name}[.{attr}] <L:{spec.loader_state}>")
+
         if attr in GETATTR_PASS:
             return super().__getattribute__(attr)
-
-        spec = super().__getattribute__("__spec__")
 
         if attr in MODULE_SPEC_ATTR_MAP:
             match attr:
