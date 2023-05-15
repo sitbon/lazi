@@ -15,12 +15,11 @@ Or like this (recommended for client modules):
 >>> import lazi.conf.auto
 >>> lazi.conf.DEBUG_TRACING
 >>> from lazi.conf import auto
->>> auto.LOADER_AUTO_DEPS
+>>> auto.DEBUG_TRACING
 
 But not like this:
 
 >>> import lazi.conf        # This is not the same as the above.
->>> import lazi.conf.conf   # This works but is not recommended because lazi.conf.conf becomes inaccessible.
 >>> from lazi import conf   # Still no worky. Only imports the namespace module without loading.
 """
 import sys as _sys
@@ -29,8 +28,6 @@ from types import ModuleType, EllipsisType
 from typing import Iterator
 from pkgutil import ModuleInfo, iter_modules as _iter_modules
 from importlib import import_module as _import_module
-
-from lazi.util import SingletonMeta
 
 __all__ = [
     "base", "conf", "__root__", "__conf__", "__core__", "__auto__", "__keys__",
@@ -54,7 +51,7 @@ __keys__: set = {key for key in globals() if not key.startswith("_") and key.isu
 conf: dict
 
 
-class Conf(ModuleType, metaclass=SingletonMeta):
+class Conf(ModuleType):
     __all__ = __all__
 
     from . import base  # noqa: Relative import from namespace package -- works here.
@@ -140,4 +137,4 @@ _sys.modules[__name__] = Conf()  # Replace module with instance.
 
 __all__.extend(__keys__)
 
-del ModuleType, EllipsisType, Iterator, ModuleInfo, SingletonMeta
+del ModuleType, EllipsisType, Iterator, ModuleInfo
