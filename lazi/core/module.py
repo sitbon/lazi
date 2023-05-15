@@ -6,6 +6,7 @@ from lazi.util import debug
 __all__ = "Module",
 
 Spec = ForwardRef("Spec")
+Loader = ForwardRef("Loader")
 
 # See https://peps.python.org/pep-0451/#attributes
 MODULE_SPEC_ATTR_MAP = dict(
@@ -22,6 +23,9 @@ SETATTR_PASS = GETATTR_PASS + tuple(MODULE_SPEC_ATTR_MAP)
 
 
 class Module:
+    __name__: str
+    __loader__: Loader
+    __package__: str
     __spec__: Spec
 
     def __init__(self, spec: Spec, module: ModuleType | None = None):
@@ -50,7 +54,7 @@ class Module:
                 case _:
                     return getattr(spec, MODULE_SPEC_ATTR_MAP[attr])
 
-            raise AttributeError(attr)
+            return super().__getattribute__(attr) if spec.target is self else spec.target.__getattribute__(attr)
 
         self_dict = super().__getattribute__("__dict__")
 

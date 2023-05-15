@@ -4,12 +4,16 @@ from types import ModuleType
 from typing import ForwardRef
 from dataclasses import dataclass
 from importlib.machinery import ModuleSpec
-
+from pathlib import Path
+import sysconfig
 
 __all__ = "Spec",
 
 Finder = ForwardRef("Finder")
 Loader = ForwardRef("Loader")
+
+
+getattr(sysconfig, "get_path")  # Preload sysconfig data.
 
 
 class Spec(ModuleSpec):
@@ -43,3 +47,11 @@ class Spec(ModuleSpec):
 
         self.__dict__.update(spec.__dict__)
         self.loader = finder.Loader(self) if not isinstance(self.loader, finder.Loader) else self.loader
+
+    @property
+    def is_stdlib(self) -> bool:
+        return not self.is_builtin and Path(self.origin).is_relative_to(sysconfig.get_path("stdlib"))
+
+    @property
+    def is_builtin(self) -> bool:
+        return self.origin in (None, "built-in")

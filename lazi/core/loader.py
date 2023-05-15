@@ -53,10 +53,13 @@ class Loader(_Loader):
         spec = module.__spec__
         assert spec.loader is self, (spec.loader, self)
         assert spec.loader_state in (self.State.CREA, self.State.LAZY), spec.loader_state
-        
+
+        # if spec.is_builtin:
+        #     lazy = False
+
         assert None is debug.traced(
             1,
-            f"<exec> {spec.name} <L:{spec.loader_state}> <l:{lazy}> "
+            f"<exec> {spec.name} <L:{spec.loader_state}> <l:{lazy}> <std:{spec.is_stdlib}> <bi:{spec.is_builtin}> "
             f"<sys:{spec.name in sys.modules}> <{sys.modules.get(spec.name) is module}>"
         )
 
@@ -91,7 +94,7 @@ class Loader(_Loader):
         if spec.name not in sys.modules:
             assert None is debug.trace(
                 f"<exec> {spec.name} <L:{spec.loader_state}> <l:{lazy}> "
-                f"<deleted-from-sys-modules>"
+                f"<deleted-from-sys-modules-after>"
             )
 
         elif sys.modules[spec.name] is not spec.target and sys.modules[spec.name] is not module:
