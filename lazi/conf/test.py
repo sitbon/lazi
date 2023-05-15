@@ -1,3 +1,5 @@
+from . import base
 import os
 
-DEBUG_TRACING: int = int(os.getenv("DEBUG_TRACING", "0"))
+
+DEBUG_TRACING = int(os.getenv("DEBUG_TRACING", base.DEBUG_TRACING))
