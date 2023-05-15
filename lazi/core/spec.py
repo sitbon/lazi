@@ -46,7 +46,8 @@ class Spec(ModuleSpec):
         )
 
         self.__dict__.update(spec.__dict__)
-        self.loader = finder.Loader(self) if not isinstance(self.loader, finder.Loader) else self.loader
+
+        self.loader = finder.Loader(self) if not self.is_builtin else self.loader
 
     @property
     def is_stdlib(self) -> bool:

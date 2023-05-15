@@ -73,7 +73,7 @@ class Finder(MetaPathFinder):
 
         assert None is debug.traced(
             1,
-            f"<find> {name} <p:{len(path) if path else path!r}> <t:{target!r}> <f:{id(self)}> "
+            f"<find> {name} <id:{id(self)}> <p:{len(path) if path else path!r}> <t:{target!r}> "
             f"<stack:{len(self.__stack__)}>"
         )
 
@@ -86,7 +86,7 @@ class Finder(MetaPathFinder):
         try:
             if (spec := find_spec(name, path)) is not None:
                 spec = self.__specs__[name] = self.Spec(self, spec, path, target)
-                assert None is debug.traced(2, f"<foun> {spec.name} <L:{spec.loader_state}> <stack:{len(self.__stack__)}>")
+                assert None is debug.traced(2, f"<foun> {spec.name} <id:{id(self)}> <L:{spec.loader_state}>")
                 return spec
 
         finally:

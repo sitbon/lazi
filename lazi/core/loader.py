@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import sys
+from types import ModuleType
 from typing import ForwardRef
 from enum import Enum
 from importlib.abc import Loader as _Loader
 from importlib.util import module_from_spec
+from importlib.machinery import ModuleSpec
 
 from lazi.conf import conf
 from lazi.util import debug
@@ -29,10 +31,9 @@ class Loader(_Loader):
 
     def __init__(self, spec: Spec):
         self.loader = spec.loader
-        spec.loader = self
         spec.loader_state = self.State.INIT
 
-    def create_module(self, spec: Spec):
+    def create_module(self, spec: Spec | ModuleSpec):
         assert spec.loader is self, (spec.loader, self)
 
         if self in self.__stack__:
@@ -49,18 +50,16 @@ class Loader(_Loader):
         finally:
             self.__stack__.pop()
 
-    def exec_module(self, module: Module, lazy: bool = True):
+    def exec_module(self, module: Module | ModuleType, lazy: bool = True):
         spec = module.__spec__
         assert spec.loader is self, (spec.loader, self)
         assert spec.loader_state in (self.State.CREA, self.State.LAZY), spec.loader_state
 
-        # if spec.is_builtin:
-        #     lazy = False
-
         assert None is debug.traced(
             1,
             f"<exec> {spec.name} <L:{spec.loader_state}> <l:{lazy}> <std:{spec.is_stdlib}> <bi:{spec.is_builtin}> "
-            f"<sys:{spec.name in sys.modules}> <{sys.modules.get(spec.name) is module}>"
+            f"<in:{spec.name in sys.modules}> <is-m:{sys.modules.get(spec.name) is module}> "
+            f"<is-t:{sys.modules[spec.name] is spec.target}>"
         )
 
         if spec.name not in sys.modules:
@@ -69,6 +68,7 @@ class Loader(_Loader):
                 f"<missing-in-sys-modules-before>"
             )
             sys.modules[spec.name] = module
+
         elif sys.modules[spec.name] is not module:
             assert None is debug.trace(
                 f"<exec> {spec.name} <L:{spec.loader_state}> <l:{lazy}> "
