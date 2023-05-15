@@ -23,15 +23,16 @@ GETATTR_PASS = ("__spec__", "__class__") + (("__dict__",) if not conf.NO_DICT_LA
 SETATTR_PASS = GETATTR_PASS + tuple(MODULE_SPEC_ATTR_MAP)
 
 
-class Module:
+class Module(ModuleType):
     __name__: str
     __loader__: Loader
     __package__: str
     __spec__: Spec
 
-    def __init__(self, spec: Spec, module: ModuleType | None = None):
-        super().__setattr__("__spec__", spec)
-        spec.target = module if module is not None else self
+    def __init__(self, spec: Spec, module: ModuleType):
+        super().__init__(spec.name)
+        self.__spec__ = spec
+        spec.target = module
 
     def __getattribute__(self, attr):
         spec = super().__getattribute__("__spec__")
@@ -39,7 +40,7 @@ class Module:
         assert None is debug.traced(2, f"<get> {spec.name}[.{attr}] <L:{spec.loader_state}>")
 
         if attr in GETATTR_PASS:
-            return super().__getattribute__(attr) if spec.target is self else spec.target.__getattribute__(attr)
+            return spec.target.__getattribute__(attr)
 
         if attr in MODULE_SPEC_ATTR_MAP:
             match attr:
@@ -55,21 +56,13 @@ class Module:
                 case _:
                     return getattr(spec, MODULE_SPEC_ATTR_MAP[attr])
 
-            return super().__getattribute__(attr) if spec.target is self else spec.target.__getattribute__(attr)
+            return spec.target.__getattribute__(attr)
 
-        self_dict = super().__getattribute__("__dict__")
-
-        if spec.target is self:
+        if not conf.NO_DICT_LAZY_ATTR:
+            module_dict = spec.target.__getattribute__("__dict__")
             if attr == "__dict__":
-                return self_dict
-
-            if attr in self_dict:
-                return super().__getattribute__(attr)
-
-        if not conf.NO_DICT_LAZY_ATTR and spec.target is not self:
-            if attr == "__dict__":
-                return spec.target.__getattribute__("__dict__")
-            if attr in (module_dict := spec.target.__getattribute__("__dict__")):
+                return module_dict
+            if attr in module_dict:
                 return module_dict[attr]
 
         assert None is debug.traced(
@@ -80,10 +73,16 @@ class Module:
         if spec.loader_state.value <= spec.loader.State.LAZY.value:
             spec.loader.exec_module(self, lazy=False)
 
-        return super().__getattribute__(attr) if spec.target is self else spec.target.__getattribute__(attr)
+        return spec.target.__getattribute__(attr)
 
     def __setattr__(self, attr, valu):
         spec = super().__getattribute__("__spec__")
+
+        if attr in SETATTR_PASS:
+            if attr == "__spec__":
+                return super().__setattr__(attr, valu)
+
+            return spec.target.__setattr__(attr, valu)
 
         assert None is debug.traced(
             1,
@@ -92,15 +91,6 @@ class Module:
             f" <L:{spec.loader_state}>"
         )
 
-        if attr in SETATTR_PASS:
-            return super().__setattr__(attr, valu) if spec.target is self else spec.target.__setattr__(attr, valu)
-
         # TODO: We have recursion issues in some cases now?
         getattr(self, attr)
-        return super().__setattr__(attr, valu) if spec.target is self else spec.target.__setattr__(attr, valu)
-
-    def __delattr__(self, attr):
-        spec = super().__getattribute__("__spec__")
-        assert None is debug.trace(f"<del> {spec.name}[.{attr}] <L:{spec.loader_state}>")
-        getattr(self, attr)
-        return super().__delattr__(attr) if spec.target is self else spec.target.__delattr__(attr)
+        return spec.target.__setattr__(attr, valu)
