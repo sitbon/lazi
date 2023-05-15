@@ -1,4 +1,3 @@
-from typing import Callable
 
 __all__ = "classproperty",
 

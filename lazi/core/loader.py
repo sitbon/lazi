@@ -54,11 +54,24 @@ class Loader(_Loader):
         assert spec.loader is self, (spec.loader, self)
         assert spec.loader_state in (self.State.CREA, self.State.LAZY), spec.loader_state
         
-        assert None is debug.trace(
-            f"<exec> {spec.name} <L:{spec.loader_state}> <l:{lazy}>"
+        assert None is debug.traced(
+            1,
+            f"<exec> {spec.name} <L:{spec.loader_state}> <l:{lazy}> "
+            f"<sys:{spec.name in sys.modules}> <{sys.modules.get(spec.name) is module}>"
         )
 
         if spec.name not in sys.modules:
+            assert None is debug.trace(
+                f"<exec> {spec.name} <L:{spec.loader_state}> <l:{lazy}> "
+                f"<missing-in-sys-modules-before>"
+            )
+            sys.modules[spec.name] = module
+        elif sys.modules[spec.name] is not module:
+            assert None is debug.trace(
+                f"<exec> {spec.name} <L:{spec.loader_state}> <l:{lazy}> "
+                f"<replaced-in-sys-modules-before>"
+            )
+            spec.target = sys.modules[spec.name]
             sys.modules[spec.name] = module
 
         if not lazy or conf.FORCE_LOAD_MODULE:
@@ -68,11 +81,32 @@ class Loader(_Loader):
         else:
             spec.loader_state = self.State.LAZY
 
+        assert None is debug.traced(
+            3,
+            f"<sys> {spec.name} <L:{spec.loader_state}> <l:{lazy}> <m:{module}:{module.__name__}> "
+            f"<in:{spec.name in sys.modules}> <is-m:{sys.modules[spec.name] is module}> "
+            f"<is-t:{sys.modules[spec.name] is spec.target}>"
+        )
+
+        if spec.name not in sys.modules:
+            assert None is debug.trace(
+                f"<exec> {spec.name} <L:{spec.loader_state}> <l:{lazy}> "
+                f"<deleted-from-sys-modules>"
+            )
+
+        elif sys.modules[spec.name] is not spec.target and sys.modules[spec.name] is not module:
+            assert None is debug.trace(
+                f"<exec> {spec.name} <L:{spec.loader_state}> <l:{lazy}> "
+                f"<replaced-in-sys-modules-after>"
+            )
+            spec.target = sys.modules[spec.name]
+            pass
+
     def unload_module(self, spec: Spec):
         assert spec.loader is self, (spec.loader, self)
         assert spec.loader_state is self.State.LOAD, spec.loader_state
         
-        if spec.name in sys.modules:
-            del sys.modules[spec.name]
+        if (name := spec.target.__name__) in sys.modules:
+            del sys.modules[name]
 
         spec.loader_state = self.State.DEAD

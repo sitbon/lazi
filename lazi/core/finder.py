@@ -2,11 +2,9 @@ from __future__ import annotations
 
 import sys
 from types import ModuleType
-from dataclasses import dataclass
 from importlib.util import find_spec, module_from_spec
 from importlib.abc import MetaPathFinder
 
-from lazi.conf import conf
 from lazi.util import classproperty, debug
 
 from .spec import Spec
@@ -34,19 +32,17 @@ class Finder(MetaPathFinder):
     def __enter__(self) -> Finder:
         if self not in sys.meta_path:
             assert self.__refs__ == 0, self.__refs__
-            if __debug__ and conf.DEBUG_TRACING > 1:
-                assert None is debug.trace(
-                    f"+ {self.__class__.__name__}[{id(self)}] "
-                    f"<{len([_ for _ in sys.meta_path if isinstance(_, type(self))])}>"
-                )
+            assert None is debug.trace(
+                f"+ {self.__class__.__name__}[{id(self)}] <refs:{self.__refs__}> "
+                f"<inst:{len([_ for _ in sys.meta_path if isinstance(_, type(self))])}>"
+            )
             sys.meta_path.insert(0, self)
 
         self.__refs__ += 1
         return self
 
     def __exit__(self, exc_type, exc_value, traceback) -> bool:
-        if __debug__ and conf.DEBUG_TRACING > 1 and self.__refs__ == 1:
-            assert None is debug.trace(f"- {self.__class__.__name__}[{id(self)}]")
+        assert None is debug.trace(f"- {self.__class__.__name__}[{id(self)}] <refs:{self.__refs__}>")
 
         self.__refs__ = max(self.__refs__ - 1, 0)
 
@@ -75,8 +71,10 @@ class Finder(MetaPathFinder):
         if self in self.__stack__:
             return None
 
-        if conf.DEBUG_TRACING > 1:
-            assert None is debug.trace(f"<find> {name} <p:{len(path) if path else path!r}> <t:{target!r}>")
+        assert None is debug.traced(
+            1,
+            f"<find> {name} <p:{len(path) if path else path!r}> <t:{target!r}> <f:{id(self)}>"
+        )
 
         if (spec := self.__specs__.get(name)) is not None:
             assert spec.finder is self, (spec.finder, self)
@@ -87,8 +85,7 @@ class Finder(MetaPathFinder):
         try:
             if (spec := find_spec(name, path)) is not None:
                 spec = self.__specs__[name] = self.Spec(self, spec, path, target)
-                if conf.DEBUG_TRACING > 1:
-                    assert None is debug.trace(f"<foun> {spec.name} <L:{spec.loader_state}>")
+                assert None is debug.traced(3, f"<foun> {spec.name} <L:{spec.loader_state}>")
                 return spec
 
         finally:
