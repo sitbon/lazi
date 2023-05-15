@@ -1,126 +1,77 @@
-import sys
-from types import ModuleType
-from importlib.util import LazyLoader
-from importlib.abc import Loader as _Loader
-# noinspection PyUnresolvedReferences,PyProtectedMember
-from importlib.util import _LazyModule  # type: type[ModuleType]
+from __future__ import annotations
 
-from lazi.conf import conf
+import sys
+from typing import ForwardRef
+from enum import Enum
+from importlib.abc import Loader as _Loader
+from importlib.util import module_from_spec
+
 from lazi.util import debug
-from .record import SpecRecord
 
 __all__ = "Loader",
 
+Spec = ForwardRef("Spec")
+Module = ForwardRef("Module")
 
-class Loader(LazyLoader):
-    spec_record: SpecRecord
-    loader: _Loader  # set by LazyLoader
 
-    def __init__(self, spec_record: SpecRecord):
-        self.spec_record = spec_record
-        super().__init__(spec_record.spec.loader)
+class Loader(_Loader):
+    loader: _Loader | None = None
+    __stack__: list[Loader] = []
 
-    @property
-    def used(self) -> bool:
-        return self.spec_record.used
+    class State(Enum):
+        INIT = 0
+        CREA = 1
+        LAZY = 2
+        EXEC = 3
+        LOAD = 4
+        DEAD = 5
 
-    def hook(self):
-        assert self.spec_record.hook is True
-        self.spec_record.spec.loader = self
+    def __init__(self, spec: Spec):
+        self.loader = spec.loader
+        spec.loader = self
+        spec.loader_state = self.State.INIT
 
-    def pre_load(self):
-        self.spec_record.pre_load()
+    def create_module(self, spec: Spec):
+        assert spec.loader is self, (spec.loader, self)
 
-    def on_load(self):
-        self.spec_record.on_load()
+        if self in self.__stack__:
+            return None
 
-    def on_load_exc(self, attr: str | None, exc: Exception) -> None:
-        return self.spec_record.on_load_exc(attr, exc)
+        self.__stack__.append(self)
 
-    def on_exec(self, module: ModuleType):
-        return self.spec_record.on_exec(module)
+        try:
+            if (module := self.loader.create_module(spec)) is None:
+                module = module_from_spec(spec)
 
-    def post_exec(self, module: ModuleType | None) -> bool:
-        return self.spec_record.post_exec(module)
+            spec.loader_state = self.State.CREA
+            return spec.finder.Module(spec, module)
+        finally:
+            self.__stack__.pop()
 
-    def exec_module(self, module: ModuleType):
-        assert self.spec_record.spec is not None
-        assert not self.used
+    def exec_module(self, module: Module, lazy: bool = True):
+        spec = module.__spec__
+        assert spec.loader is self, (spec.loader, self)
+        assert spec.loader_state in (self.State.CREA, self.State.LAZY), spec.loader_state
+        
+        assert None is debug.trace(
+            f"<exec> {spec.name} <L:{spec.loader_state}> <l:{lazy}>"
+        )
 
-        self.on_exec(module)
+        if spec.name not in sys.modules:
+            sys.modules[spec.name] = module
 
-        if conf.LOADER_FORCE_ALL:
-            # Early bypass here instead of constructing a LazyModule only to throw it away.
-            assert None is debug.trace("exec_module", self.spec_record.debug_repr, "<F>")
+        if not lazy:
+            spec.loader_state = self.State.EXEC
+            self.loader.exec_module(module)
+            spec.loader_state = self.State.LOAD
+        else:
+            spec.loader_state = self.State.LAZY
 
-            module.__spec__.loader = self.loader
-            module.__loader__ = self.loader
+    def unload_module(self, spec: Spec):
+        assert spec.loader is self, (spec.loader, self)
+        assert spec.loader_state is self.State.LOAD, spec.loader_state
+        
+        if spec.name in sys.modules:
+            del sys.modules[spec.name]
 
-            try:
-                self.pre_load()
-                self.loader.exec_module(module)
-                self.post_exec(module)
-                self.on_load()
-                return
-
-            except Exception as exc:
-                self.on_load_exc(None, exc)
-                raise
-
-        mdic = object.__getattribute__(module, "__dict__")
-
-        super().exec_module(module)
-
-        self.spec_record.spec.loader = self
-        mdic["__loader__"] = self
-
-        # noinspection PyMethodParameters
-        class LazyModule(_LazyModule):
-            def __setattr__(_, key, value):
-                assert None is debug.trace("setattribute", self.spec_record.name, key)
-                return super().__setattr__(key, value)
-
-            def __getattribute__(_, attr):
-                if attr == "__class__" or attr in conf.LOADER_FAKE_ATTR:
-                    if attr in mdic:
-                        return mdic[attr]
-
-                    assert None is debug.trace("geeattribute", self.spec_record.name, attr)
-                    raise AttributeError(attr)
-
-                self.pre_load()
-
-                self.spec_record.spec.loader = self.loader
-                mdic["__loader__"] = self.loader
-
-                try:
-                    assert None is debug.trace("getattribute", self.spec_record.name, attr, "<load>")
-                    valu = _LazyModule.__getattribute__(_, attr)
-
-                # except (AttributeError, NameError) as exc:
-                #     self.on_load_exc(attr, exc)
-                #     raise
-
-                except Exception as exc:
-                    self.on_load_exc(attr, exc)
-                    raise AttributeError(attr) from exc
-
-                else:
-                    self.on_load()
-                    return valu
-
-                finally:
-                    if mdic.get("__class__", LazyModule) is LazyModule:
-                        self.spec_record.spec.loader = self
-                        mdic["__loader__"] = self
-
-            def __delattr__(_, attr):
-                return _LazyModule.__delattr__(_,  attr)
-
-        module.__class__ = LazyModule
-
-        if conf.LOADER_FORCE_ALL or (self.post_exec(module) and conf.LOADER_AUTO_DEPS):
-            # Bypass lazy loading in recursive situations (called here indirectly between pre_load and on_load).
-            assert None is debug.trace("exec_module", self.spec_record.name, "<force>")
-            # return self.spec_record.loader.exec_module(module)
-            getattr(module, "__dict__", None)  # Force the module to load.
+        spec.loader_state = self.State.DEAD

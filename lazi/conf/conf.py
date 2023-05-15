@@ -8,12 +8,12 @@
 Use like this (recommended for package mdules):
 
 >>> from lazi.conf import conf
->>> conf.LOADER_AUTO_DEPS
+>>> conf.DEBUG_TRACING
 
 Or like this (recommended for client modules):
 
 >>> import lazi.conf.auto
->>> lazi.conf.LOADER_AUTO_DEPS
+>>> lazi.conf.DEBUG_TRACING
 >>> from lazi.conf import auto
 >>> auto.LOADER_AUTO_DEPS
 
