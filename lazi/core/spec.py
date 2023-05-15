@@ -7,6 +7,8 @@ from importlib.machinery import ModuleSpec
 from pathlib import Path
 import sysconfig
 
+from lazi.conf import conf
+
 __all__ = "Spec",
 
 Finder = ForwardRef("Finder")
@@ -47,7 +49,14 @@ class Spec(ModuleSpec):
 
         self.__dict__.update(spec.__dict__)
 
-        self.loader = finder.Loader(self) if not self.is_builtin else self.loader
+        self.loader = finder.Loader(self) if self.hook else self.loader
+
+    @property
+    def hook(self) -> bool:
+        return not conf.DISABLE_LOAD_HOOK and (
+            not self.is_builtin and
+            (not self.is_stdlib or not conf.NO_STDLIB_MODULES)
+        )
 
     @property
     def is_stdlib(self) -> bool:

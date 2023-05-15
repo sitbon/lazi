@@ -1,6 +1,7 @@
 from types import ModuleType
 from typing import ForwardRef
 
+from lazi.conf import conf
 from lazi.util import debug
 
 __all__ = "Module",
@@ -18,7 +19,7 @@ MODULE_SPEC_ATTR_MAP = dict(
     __path__="submodule_search_locations",
 )
 
-GETATTR_PASS = ("__spec__", "__dict__", "__class__")
+GETATTR_PASS = ("__spec__", "__class__") + (("__dict__",) if not conf.NO_DICT_LAZY_ATTR else ())
 SETATTR_PASS = GETATTR_PASS + tuple(MODULE_SPEC_ATTR_MAP)
 
 
@@ -58,13 +59,23 @@ class Module:
 
         self_dict = super().__getattribute__("__dict__")
 
-        if attr in self_dict:
-            return super().__getattribute__(attr)
+        if spec.target is self:
+            if attr == "__dict__":
+                return self_dict
 
-        if spec.target is not self and attr in (module_dict := spec.target.__getattribute__("__dict__")):
-            return module_dict[attr]
+            if attr in self_dict:
+                return super().__getattribute__(attr)
 
-        assert None is debug.trace(f"<attr> {spec.name}[.{attr}] <L:{spec.loader_state}>")
+        if not conf.NO_DICT_LAZY_ATTR and spec.target is not self:
+            if attr == "__dict__":
+                return spec.target.__getattribute__("__dict__")
+            if attr in (module_dict := spec.target.__getattribute__("__dict__")):
+                return module_dict[attr]
+
+        assert None is debug.traced(
+            0 if spec.loader_state.value < spec.loader.State.LOAD.value else 1,
+            f"<attr> {spec.name}[.{attr}] <L:{spec.loader_state}>"
+        )
 
         if spec.loader_state.value <= spec.loader.State.LAZY.value:
             spec.loader.exec_module(self, lazy=False)
@@ -84,6 +95,7 @@ class Module:
         if attr in SETATTR_PASS:
             return super().__setattr__(attr, valu) if spec.target is self else spec.target.__setattr__(attr, valu)
 
+        # TODO: We have recursion issues in some cases now?
         getattr(self, attr)
         return super().__setattr__(attr, valu) if spec.target is self else spec.target.__setattr__(attr, valu)
 

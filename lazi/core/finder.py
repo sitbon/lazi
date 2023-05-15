@@ -86,7 +86,7 @@ class Finder(MetaPathFinder):
         try:
             if (spec := find_spec(name, path)) is not None:
                 spec = self.__specs__[name] = self.Spec(self, spec, path, target)
-                assert None is debug.traced(2, f"<foun> {spec.name} <id:{id(self)}> <L:{spec.loader_state}>")
+                assert None is debug.traced(2, f"<foun> {spec.name} <id:{id(self)}> <L:{spec.loader_state}> <o:{spec.origin}>")
                 return spec
 
         finally:
@@ -95,7 +95,7 @@ class Finder(MetaPathFinder):
 
     def invalidate_caches(self) -> None:
         while self.__specs__ and (spec := self.__specs__.popitem()[1]):
-            if spec.loader_state == spec.loader.State.LOAD:
+            if spec.loader_state is not None and spec.loader_state == spec.loader.State.LOAD:
                 spec.loader.unload_module(spec)
 
 
