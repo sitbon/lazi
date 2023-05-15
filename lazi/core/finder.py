@@ -39,10 +39,9 @@ class Finder(MetaPathFinder):
                     f"+ {self.__class__.__name__}[{id(self)}] "
                     f"<{len([_ for _ in sys.meta_path if isinstance(_, type(self))])}>"
                 )
-
-            self.__refs__ += 1
             sys.meta_path.insert(0, self)
 
+        self.__refs__ += 1
         return self
 
     def __exit__(self, exc_type, exc_value, traceback) -> bool:

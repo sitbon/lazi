@@ -68,7 +68,7 @@ with the caveat that some variables may have already been used by
 
 ```python
 from lazi.conf import conf
-conf.DEBUG_TRACING = True
+conf.DEBUG_TRACING = 1
 import lazi.auto
 # ...
 ```

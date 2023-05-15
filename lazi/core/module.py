@@ -64,7 +64,7 @@ class Module:
 
         assert None is debug.trace(f"<attr> {spec.name}[.{attr}] <L:{spec.loader_state}>")
 
-        if spec.loader_state is spec.loader.State.LAZY:
+        if spec.loader_state.value <= spec.loader.State.LAZY.value:
             spec.loader.exec_module(spec.target, lazy=False)
 
         if spec.target is self:

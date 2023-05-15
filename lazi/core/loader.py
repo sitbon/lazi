@@ -6,6 +6,7 @@ from enum import Enum
 from importlib.abc import Loader as _Loader
 from importlib.util import module_from_spec
 
+from lazi.conf import conf
 from lazi.util import debug
 
 __all__ = "Loader",
@@ -60,7 +61,7 @@ class Loader(_Loader):
         if spec.name not in sys.modules:
             sys.modules[spec.name] = module
 
-        if not lazy:
+        if not lazy or conf.FORCE_LOAD_MODULE:
             spec.loader_state = self.State.EXEC
             self.loader.exec_module(module)
             spec.loader_state = self.State.LOAD
