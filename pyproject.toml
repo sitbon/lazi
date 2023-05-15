@@ -52,7 +52,7 @@ presto-requests = {git = "https://github.com/sitbon/presto"}
 
 
 [tool.pytest.ini_options]
-addopts = "-v"
+addopts = "-v -rA"
 cache_dir = ".cache/pytest"
 testpaths = [
     "tests",

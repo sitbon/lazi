@@ -58,10 +58,16 @@ class Finder(MetaPathFinder):
         if self.__refs == 0 and self in sys.meta_path:
             sys.meta_path.remove(self)
             self.invalidate_caches()
-            
+
+    @classmethod
+    def install(cls) -> Finder:
+        finders = list(cls.finders)
+        return finders[0].__enter__() if finders else cls().__enter__()
+
     def lazy(self, name: str, path: list[str] | None = None, target: ModuleType | None = None) -> ModuleType:
         if (spec := self.find_spec(name, path, target)) is not None:
             module = module_from_spec(spec)
+            sys.modules[spec.name] = module
             spec.loader.exec_module(module)
             return module
 
@@ -89,38 +95,3 @@ class Finder(MetaPathFinder):
 
     def invalidate_caches(self) -> None:
         self.__specs__.clear()
-
-    # @classmethod
-    # def lazy(cls, name: str, path: list[str] | None = None, target: ModuleType | None = None) -> ModuleType:
-    #     record = cls.lazy_record(name, path, target)
-    #     if record.spec is None:
-    #         raise ModuleNotFoundError(f"No module named {name!r}", name=name, path=path)
-    #     return record.module
-
-    # def pre_import(self, spec_record: SpecRecord) -> None:
-    #     if conf.DEBUG_TRACING > 2:
-    #         assert None is debug.trace("pre_import", spec_record.name, spec_record.spec)
-    #
-    # def on_import(self, spec_record: SpecRecord) -> None:
-    #     if spec_record.hook or conf.DEBUG_TRACING > 1:
-    #         if conf.DEBUG_TRACING > 2:
-    #             assert None is debug.trace("on_import", spec_record.name, spec_record.path, spec_record.spec)
-    #         else:
-    #             assert None is debug.trace("on_import", spec_record.debug_repr)
-    #
-    # def pre_load(self, spec_record: SpecRecord) -> None:
-    #     assert None is debug.trace("pre_load", spec_record.debug_repr)
-    #
-    # def on_load(self, spec_record: SpecRecord) -> None:
-    #     assert None is debug.trace("on_load", spec_record.debug_repr)
-    #
-    # def on_load_exc(self, spec_record: SpecRecord, attr: str | None, exc: Exception) -> None:
-    #     assert None is debug.trace("on_load_exc", spec_record.name, attr, type(exc).__name__, exc)
-    #     assert None is debug.trace("           ", spec_record.debug_repr)
-    #
-    # def on_exec(self, spec_record: SpecRecord, module: ModuleType) -> None:
-    #     assert None is debug.trace("on_exec", spec_record.debug_repr)
-    #
-    # def post_exec(self, spec_record: SpecRecord, module: ModuleType) -> bool | None:
-    #     assert None is debug.trace("post_exec", spec_record.debug_repr)
-    #     return
