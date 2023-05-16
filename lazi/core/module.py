@@ -31,7 +31,7 @@ class Module(ModuleType):
 
     def __init__(self, spec: Spec, module: ModuleType):
         super().__init__(spec.name)
-        self.__spec__ = spec
+        self.__spec__ = module.__spec__ = spec
         spec.target = module
 
     def __getattribute__(self, attr):
@@ -39,8 +39,8 @@ class Module(ModuleType):
 
         assert None is debug.traced(3, f"[{id(self)}] <GET> {spec.loader_state} {spec.name}[.{attr}]")
 
-        if attr in GETATTR_PASS:
-            return spec.target.__getattribute__(attr)
+        if attr in GETATTR_PASS and (index := GETATTR_PASS.index(attr)) >= 0:
+            return spec if not index else spec.target.__getattribute__(attr)
 
         if attr in MODULE_SPEC_ATTR_MAP:
             match attr:
@@ -58,19 +58,30 @@ class Module(ModuleType):
 
             return spec.target.__getattribute__(attr)
 
-        if not conf.NO_DICT_LAZY_ATTR:
-            module_dict = spec.target.__getattribute__("__dict__")
-            if attr == "__dict__":
-                return module_dict
-            if attr in module_dict:
-                return module_dict[attr]
+        # if not conf.NO_DICT_LAZY_ATTR:
+        #     module_dict = spec.target.__getattribute__("__dict__")
+        #     if attr == "__dict__":
+        #         return module_dict
+        #     if attr in module_dict:
+        #         return module_dict[attr]
 
-        if spec.loader_state.value <= spec.loader.State.LAZY.value:
+        if force := (spec.loader_state.value <= spec.loader.State.LAZY.value):
             assert None is debug.trace(f"[{id(self)}] <get> {spec.loader_state} {spec.name}[.{attr}]")
+            spec.loader.exec_module(self, spec, force)
 
-            spec.loader.exec_module(self, spec, False)
+        valu = spec.target.__getattribute__(attr)
 
-        return spec.target.__getattribute__(attr)
+        # NOTE: If NO_DICT_LAZY_ATTR is False, we need to make sure that the result of getattribute
+        #       is loaded, if it's a module.
+        #       Otherwise, we can just trigger the exec and then return it (or raise AttributeError).
+        #
+        # if conf.NO_DICT_LAZY_ATTR is False and isinstance(valu, ModuleType):
+        #     if isinstance(valu, ModuleType):
+        #         loader = valu.__loader__
+        #         valu.__loader__.exec_module(valu, None, force) if isinstance(loader, type(spec.loader)) else \
+        #             valu.__loader__.exec_module(valu)
+
+        return valu
 
     def __setattr__(self, attr, valu):
         spec = super().__getattribute__("__spec__")
@@ -81,9 +92,17 @@ class Module(ModuleType):
 
             return spec.target.__setattr__(attr, valu)
 
-        if spec.loader_state.value <= spec.loader.State.LAZY.value:
+        if force := (spec.loader_state.value <= spec.loader.State.LAZY.value):
             assert None is debug.trace(f"[{id(self)}] <set> {spec.loader_state} {spec.name}[.{attr}] [{id(valu)}]")
+            spec.loader.exec_module(self, spec, force)
 
-            spec.loader.exec_module(self, spec, False)
+        # NOTE: If NO_DICT_LAZY_ATTR is False, we need to make sure that the target attribute
+        #       is loaded, if it's a module attribute.
+        #       Otherwise, we can just trigger the exec and then set it.
+        #
+        # if conf.NO_DICT_LAZY_ATTR is False and isinstance(valu, ModuleType):
+        #     loader = valu.__loader__
+        #     valu.__loader__.exec_module(valu, None, force) if isinstance(loader, type(spec.loader)) else \
+        #         valu.__loader__.exec_module(valu)
 
         return spec.target.__setattr__(attr, valu)

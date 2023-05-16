@@ -16,7 +16,7 @@ Module = ForwardRef("Module")
 
 
 class Loader(_Loader):
-    loader: _Loader | None = None
+    loader: _Loader
     __stack__: list[Loader] = []
 
     class State(Enum):
@@ -49,16 +49,14 @@ class Loader(_Loader):
         finally:
             self.__stack__.pop()
 
-    def exec_module(self, module: Module, spec: Spec | None = None, lazy: bool = True, /):
+    def exec_module(self, module: Module, spec: Spec | None = None, force: bool = False, /):
         spec = spec if spec is not None else module.__spec__
         assert spec.loader is self, (spec.loader, self)
 
         name = spec.name  # This may be overly cautious: >>> spec.target.__getattribute__("__name__")
         state = spec.loader_state
-        nexts = self.State.EXEC if not lazy or conf.FORCE_LOAD_MODULE else self.State.LAZY
-        
-        assert state in (self.State.CREA, self.State.LAZY), spec.loader_state
-        
+        nexts = spec.loader_state = self.State.EXEC if force or conf.FORCE_LOAD_MODULE else self.State.LAZY
+
         if name not in modules:
             assert None is debug.trace(f"[{id(module)}] <exec> {state} {name}:{nexts} missing-in-sys-modules-before")
             modules[name] = module
@@ -73,14 +71,11 @@ class Loader(_Loader):
 
         assert None is debug.traced(1, f"[{id(module)}] <exec> {state} {name}:{nexts} std:{int(spec.is_stdlib)} bi:{int(spec.is_builtin)}")
 
-        if nexts is self.State.EXEC:
-            spec.loader_state = self.State.EXEC
-            self.loader.exec_module(module)
+        if spec.loader_state is self.State.EXEC:
+            self.loader.exec_module(module, spec, force) if isinstance(self.loader, type(self)) else \
+                self.loader.exec_module(module)
             spec.loader_state = self.State.LOAD
             assert None is debug.traced(3, f"[{id(module)}] <EXEC> {state} {name}:{nexts}")
-
-        else:
-            spec.loader_state = self.State.LAZY
 
         if name not in modules:
             assert None is debug.trace(f"[{id(module)}] <exec> {state} {name}:{nexts} deleted-from-sys-modules-after")
