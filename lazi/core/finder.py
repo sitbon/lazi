@@ -98,6 +98,15 @@ class Finder(MetaPathFinder):
 
         if (spec := self.specs.get(name)) is not None:
             assert spec.finder is self, (spec.finder, self)
+            if __debug__:
+                if spec.path != path:
+                    assert ... is debug.trace(
+                        f"[{id(self)}] FIND {name} p:{path} != spec.p:{spec.path}"
+                    ), "spec.path != path"
+                if spec.target != target:
+                    assert ... is debug.trace(
+                        f"[{id(self)}] FIND {name} t:{target!r} != spec.t:{spec.target!r}"
+                    ), "spec.target != target"
             return spec
 
         self.__busy = True
