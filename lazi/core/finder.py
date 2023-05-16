@@ -41,7 +41,7 @@ class Finder(MetaPathFinder):
         if self not in sys.meta_path:
             assert self.__refs == 0, self.__refs
             assert None is debug.trace(
-                f"[{id(self)}] +{self.__class__.__name__} refs:{self.__refs} "
+                f"[{id(self)}] HOOK {self.__class__.__name__} refs:{self.__refs} "
                 f"inst:{len(list(self.meta_path))} sys:{len(sys.meta_path)} "
             )
             sys.meta_path.insert(0, self)
@@ -52,7 +52,7 @@ class Finder(MetaPathFinder):
 
     def __exit__(self, exc_type, exc_value, traceback) -> bool:
         assert None is debug.trace(
-            f"[{id(self)}] -{self.__class__.__name__} refs:{self.__refs} "
+            f"[{id(self)}] EXIT {self.__class__.__name__} refs:{self.__refs} "
             f"inst:{len(list(self.meta_path))} sys:{len(sys.meta_path)} "
         )
 
@@ -92,7 +92,7 @@ class Finder(MetaPathFinder):
 
         assert None is debug.traced(
             1,
-            f"[{id(self)}] <find> {name} p:{len(path) if path else path!r} t:{target!r} "
+            f"[{id(self)}] FIND {name} p:{len(path) if path else path!r} t:{target!r} "
             f"stack:{len(self.__stack__)}"
         )
 
@@ -104,7 +104,7 @@ class Finder(MetaPathFinder):
         try:
             if (spec := find_spec(name, path)) is not None:
                 spec = self.specs[name] = self.Spec(self, spec, path, target)
-                assert None is debug.traced(2, f"[{id(self)}] <foun> {spec.loader_state} {spec.name} o:{spec.origin}")
+                assert None is debug.traced(2, f"[{id(self)}] FOUN {spec.name}:{spec.loader_state} o:{spec.origin}")
                 if conf.FORCE_LOAD_MODULE and (module := sys.modules.get(spec.name)):
                     spec.loader.exec_module(module, spec, True)
                 return spec
