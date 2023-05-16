@@ -26,7 +26,6 @@ class Loader(_Loader):
         LAZY = 2
         EXEC = 3
         LOAD = 4
-        # DEAD = 5
 
     def __init__(self, spec: Spec):
         self.loader = spec.loader
@@ -74,8 +73,9 @@ class Loader(_Loader):
         if spec.loader_state is self.State.EXEC:
             self.loader.exec_module(module, spec, force) if isinstance(self.loader, type(self)) else \
                 self.loader.exec_module(module)
-            spec.loader_state = self.State.LOAD
-            assert None is debug.traced(3, f"[{id(module)}] <EXEC> {state} {name}:{nexts}")
+            state = nexts
+            nexts = spec.loader_state = self.State.LOAD
+            assert None is debug.traced(2, f"[{id(module)}] <load> {state} {name}:{nexts}")
 
         if name not in modules:
             assert None is debug.trace(f"[{id(module)}] <exec> {state} {name}:{nexts} deleted-from-sys-modules-after")

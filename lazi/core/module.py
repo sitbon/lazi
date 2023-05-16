@@ -1,7 +1,6 @@
 from types import ModuleType
 from typing import ForwardRef
 
-from lazi.conf import conf
 from lazi.util import debug
 
 __all__ = "Module",
