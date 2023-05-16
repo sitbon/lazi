@@ -58,18 +58,11 @@ class Module(ModuleType):
 
             return spec.target.__getattribute__(attr)
 
-        if force := spec.loader_state.value <= spec.loader.State.LAZY.value:
+        if spec.loader_state.value <= spec.loader.State.LAZY.value:
             assert None is debug.trace(f"[{id(self)}] <get> {spec.loader_state} {spec.name}[.{attr}]")
-            spec.loader.exec_module(self, spec, force)
+            spec.loader.exec_module(self, spec, True)
 
-        valu = spec.target.__getattribute__(attr)
-
-        if isinstance(valu, ModuleType):
-            loader = valu.__loader__
-            valu.__loader__.exec_module(valu, None, force) if isinstance(loader, type(spec.loader)) else \
-                valu.__loader__.exec_module(valu)
-
-        return valu
+        return spec.target.__getattribute__(attr)
 
     def __setattr__(self, attr, valu):
         spec = super().__getattribute__("__spec__")

@@ -26,7 +26,7 @@ class Loader(_Loader):
         LAZY = 2
         EXEC = 3
         LOAD = 4
-        DEAD = 5
+        # DEAD = 5
 
     def __init__(self, spec: Spec):
         self.loader = spec.loader
@@ -53,7 +53,7 @@ class Loader(_Loader):
         spec = spec if spec is not None else module.__spec__
         assert spec.loader is self, (spec.loader, self)
 
-        name = spec.name  # This may be overly cautious: >>> spec.target.__getattribute__("__name__")
+        name = spec.name
         state = spec.loader_state
         nexts = spec.loader_state = self.State.EXEC if force or conf.FORCE_LOAD_MODULE else self.State.LAZY
 
@@ -69,7 +69,7 @@ class Loader(_Loader):
             spec.target = modules[name]
             modules[name] = module
 
-        assert None is debug.traced(1, f"[{id(module)}] <exec> {state} {name}:{nexts} std:{int(spec.is_stdlib)} bi:{int(spec.is_builtin)}")
+        assert None is debug.traced(1, f"[{id(module)}] <exec> {state} {name}:{nexts} std:{int(spec.stdlib)} bi:{int(spec.builtin)}")
 
         if spec.loader_state is self.State.EXEC:
             self.loader.exec_module(module, spec, force) if isinstance(self.loader, type(self)) else \
@@ -86,14 +86,3 @@ class Loader(_Loader):
                 f" by:{id(modules[name])}"
             )
             spec.target = modules[name]
-
-    def unload_module(self, spec: Spec):
-        assert spec.loader is self, (spec.loader, self)
-        assert spec.loader_state is self.State.LOAD, spec.loader_state
-
-        # NOTE: This alone seems ineffective in terms of freeing memory (when called from invalidate_caches()).
-        # TODO: Re-enable and watch GC activity.
-        # if (name := spec.target.__name__) in modules:
-        #     del modules[name]
-
-        spec.loader_state = self.State.DEAD

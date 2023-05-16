@@ -97,9 +97,7 @@ class Finder(MetaPathFinder):
             assert pop is self, (pop, self)
 
     def invalidate_caches(self) -> None:
-        while self.__specs__ and (spec := self.__specs__.popitem()[1]):
-            if spec.loader_state is not None and spec.loader_state == spec.loader.State.LOAD:
-                spec.loader.unload_module(spec)
+        self.__specs__.clear()
 
 
 __finder__: Finder = Finder()
