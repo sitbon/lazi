@@ -76,14 +76,15 @@ class Loader(_Loader):
         assert None is debug.traced(1, f"[{id(module)}] <exec> {state} {name}:{nexts} std:{int(spec.stdlib)} bi:{int(spec.builtin)}")
 
         if spec.loader_state is self.State.EXEC:
-            self.loader.exec_module(module, spec, force) if isinstance(self.loader, type(self)) else \
-                self.loader.exec_module(module)
+            self.loader.exec_module(spec.target, spec, force) if isinstance(self.loader, type(self)) else \
+                self.loader.exec_module(spec.target)
             state = nexts
             nexts = spec.loader_state = self.State.LOAD
             assert None is debug.traced(2, f"[{id(module)}] <load> {state} {name}:{nexts}")
 
         if name not in modules:
             assert None is debug.trace(f"[{id(module)}] <exec> {state} {name}:{nexts} deleted-from-sys-modules-after")
+            # TODO: del spec.target?
 
         elif modules[name] is not spec.target and modules[name] is not module:
             assert None is debug.trace(
@@ -91,6 +92,9 @@ class Loader(_Loader):
                 f" by:{id(modules[name])}"
             )
             spec.target = modules[name]
+
+        if nexts is self.State.LOAD:
+            modules[name] = spec.target
 
     def unload_module(self, spec: Spec) -> ModuleType | None:
         module = modules.pop(spec.name, None)
