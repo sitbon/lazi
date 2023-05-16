@@ -31,10 +31,12 @@ class Finder(MetaPathFinder):
     meta_path = classproperty(lambda cls: (_ for _ in sys.meta_path if isinstance(_, cls)))
 
     def __init__(self):
+        assert None is debug.traced(4, f"[{id(self)}] INIT {self.__class__.__name__} count:{len(self.__finders__)}")
         self.__finders__.append(self)
         self.specs = {}
 
     def __del__(self):
+        assert None is debug.traced(4, f"[{id(self)}] DEAD {self.__class__.__name__} count:{len(self.__finders__)}")
         self.__finders__.remove(self)
 
     def __enter__(self) -> Finder:
@@ -50,7 +52,7 @@ class Finder(MetaPathFinder):
         self.__refs += 1
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback) -> bool:
+    def __exit__(self, exc_type, exc_value, traceback):
         assert None is debug.trace(
             f"[{id(self)}] EXIT {self.__class__.__name__} refs:{self.__refs} "
             f"inst:{len(list(self.meta_path))} sys:{len(sys.meta_path)} "
@@ -63,8 +65,6 @@ class Finder(MetaPathFinder):
             assert pop is self, (pop, self)
             sys.meta_path.remove(self)
             self.invalidate_caches()
-            return True
-        return False
 
     def lazy(self, name: str, path: list[str] | None = None, target: ModuleType | None = None) -> ModuleType:
         pop = False

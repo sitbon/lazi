@@ -51,14 +51,38 @@ class Stat:
             for finder in __finder__.__finders__
         ))
 
-    # Number of hooked specs found in sys.modules.
-    load_hook: int = field(default_factory=lambda: sum(
-            sum(1 for spec in finder.specs.values() if sys.modules.get(spec.name) is not spec.target)
+    # Number of modules with loader in dead state.
+    load_dead: int = field(default_factory=lambda: sum(
+            sum(1 for spec in finder.specs.values() if spec.loader_state is finder.Loader.State.DEAD)
             for finder in __finder__.__finders__
         ))
 
-    # Total number of specs found in sys.modules.
-    load_syst: int = field(default_factory=lambda: sum(
-            sum(1 for spec in finder.specs.values() if spec.name in sys.modules)
+    # Number of specs with unknown loader state.
+    load_wtaf: int = field(default_factory=lambda: sum(
+            sum(
+                1 for spec in finder.specs.values()
+                if spec.loader_state is not None
+                and not isinstance(spec.loader_state, finder.Loader.State)
+            )
             for finder in __finder__.__finders__
         ))
+
+    # Number of modules with no loader state.
+    load_none: int = field(default_factory=lambda: sum(
+            sum(1 for spec in finder.specs.values() if spec.loader_state is None)
+            for finder in __finder__.__finders__
+        ))
+
+    # Number of specs with a hooked loader.
+    load_hook: int = field(default_factory=lambda: sum(
+            sum(1 for spec in finder.specs.values() if isinstance(spec.loader, finder.Loader))
+            for finder in __finder__.__finders__
+        ))
+
+    # Total number of specs found in sys.modules with a hooked loader.
+    load_syst: int = field(default_factory=lambda: sum(
+            1 for mod in sys.modules.values()
+            if isinstance(getattr(mod, "__loader__", None), Finder.Loader)
+        ))
+
+    syst_totl: int = field(default_factory=lambda: len(sys.modules))

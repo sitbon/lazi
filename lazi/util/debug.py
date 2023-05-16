@@ -1,22 +1,38 @@
+from contextlib import contextmanager
+import logging
+
 from lazi.conf import conf
 
-__all__ = "trace", "traced"
+__all__ = "trace", "traced", "log", "track"
+
+PRETTY = None
 
 
 if __debug__ and conf.DEBUG_TRACING:
-    import sys
 
-    def trace(*args, **kwds):
-        kwds.setdefault("file", sys.stderr)
-        return print(*args, **kwds)
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format="%(message)s",
+    )
 
-    def traced(at: int, /, *args, **kwds):
-        if conf.DEBUG_TRACING > at:
-            return trace(*args, **kwds)
+    traced = lambda at, /, *args, **kwds: logging.debug(*args, **kwds) if conf.DEBUG_TRACING > at else None  # noqa
+    trace = lambda *args, **kwds: traced(0, *args, **kwds)
 
 else:
-    def trace(*args, **kwds):
-        pass
+    traced = lambda at, /, *args, **kwds: None
+    trace = lambda *args, **kwds: None
+    init_pretty = lambda: None
 
-    def traced(at: int, /, *args, **kwds):
-        pass
+log = logging.debug
+
+
+@contextmanager
+def track(msg: str):
+    log(f">>> {msg} ...")
+    try:
+        yield
+    except Exception as e:
+        log(_log := f"!!! {msg} >>> {type(e).__name__}: {e}")
+        raise
+    else:
+        log(f"^^^ {msg} ^^^")

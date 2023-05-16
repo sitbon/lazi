@@ -54,6 +54,10 @@ presto-requests = {git = "https://github.com/sitbon/presto"}
 [tool.pytest.ini_options]
 addopts = "-v --no-header -rA"
 cache_dir = ".cache/pytest"
+# log_cli = true
+log_cli_level = "DEBUG"
+log_cli_format = "%(message)s"
+log_format = "%(message)s"
 testpaths = [
     "tests",
 ]
