@@ -12,7 +12,6 @@ CORE_AUTO_INSTALL: bool = False         # Automatically install when importing l
 FORCE_LOAD_MODULE: bool = False         # Immediately call exec_module() on imported modules.
 NO_STDLIB_MODULES: bool = True          # Disable loader hooking for stdlib modules.
 DISABLE_LOAD_HOOK: bool = False         # Disable all loader hooks.
-NO_DICT_LAZY_ATTR: bool = True          # Trigger exec_module() on __dict__ access.
 
 CONF_NO_CACHING: bool | None = None     # Disable caching of conf vars.
 #                                         - None: Use the default caching behavior, which will disable
