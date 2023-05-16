@@ -58,16 +58,7 @@ class Finder(MetaPathFinder):
             sys.meta_path.remove(self)
             self.invalidate_caches()
             return True
-
         return False
-
-    @classmethod
-    def install(cls) -> Finder:
-        return __finder__.__enter__()
-
-    @classmethod
-    def uninstall(cls) -> bool:
-        return __finder__.__exit__(None, None, None)
 
     def lazy(self, name: str, path: list[str] | None = None, target: ModuleType | None = None) -> ModuleType:
         pop = False

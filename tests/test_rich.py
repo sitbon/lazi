@@ -45,7 +45,7 @@ def test_rich_import_ctx():
 
 def test_rich_import_auto():
     from lazi.util import debug
-    import lazi.auto as lazi
+    from lazi.auto import lazi
 
     debug.trace("-> from rich import console as rc, pretty, traceback ->")
     from rich import console as rc, pretty, traceback
@@ -60,4 +60,4 @@ def test_rich_import_auto():
     traceback.install(console=console)
     debug.trace("^- traceback.install(console=console) -^")
 
-    lazi.uninstall()
+    lazi.__exit__(None, None, None)
