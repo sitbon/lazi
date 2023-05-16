@@ -65,15 +65,13 @@ class Module(ModuleType):
         return getattr(spec.target, attr)
 
     def __setattr__(self, attr, valu):
+        if attr == "__spec__":
+            return super().__setattr__(attr, valu)
+
         spec = super().__getattribute__("__spec__")
 
         setattr(spec.target, attr, valu)
 
-        if attr in SETATTR_PASS:
-            if attr == "__spec__":
-                super().__setattr__(attr, valu)
-            return
-
-        if spec.loader_state.value <= spec.loader.State.LAZY.value:
+        if attr not in SETATTR_PASS and spec.loader_state.value <= spec.loader.State.LAZY.value:
             assert None is debug.trace(f"[{id(self)}] <set> {spec.loader_state} {spec.name}[.{attr}] [{id(valu)}]")
             spec.loader.exec_module(self, spec, True)
