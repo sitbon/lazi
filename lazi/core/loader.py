@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from sys import modules
+from types import ModuleType
 from typing import ForwardRef
 from enum import Enum
 from importlib.abc import Loader as _Loader
@@ -26,6 +27,7 @@ class Loader(_Loader):
         LAZY = 2
         EXEC = 3
         LOAD = 4
+        DEAD = 5
 
     def __init__(self, spec: Spec):
         self.loader = spec.loader
@@ -44,7 +46,8 @@ class Loader(_Loader):
                 module = module_from_spec(spec)
 
             spec.loader_state = self.State.CREA
-            return spec.finder.Module(spec, module)
+            module = spec.finder.Module(spec, module)
+            return module
         finally:
             self.__stack__.pop()
 
@@ -54,7 +57,9 @@ class Loader(_Loader):
 
         name = spec.name
         state = spec.loader_state
-        nexts = spec.loader_state = self.State.EXEC if force or conf.FORCE_LOAD_MODULE else self.State.LAZY
+        nexts = spec.loader_state = self.State.EXEC if force else self.State.LAZY
+
+        assert state in (self.State.INIT, self.State.CREA, self.State.LAZY), state
 
         if name not in modules:
             assert None is debug.trace(f"[{id(module)}] <exec> {state} {name}:{nexts} missing-in-sys-modules-before")
@@ -86,3 +91,12 @@ class Loader(_Loader):
                 f" by:{id(modules[name])}"
             )
             spec.target = modules[name]
+
+    def unload_module(self, spec: Spec) -> ModuleType | None:
+        module = modules.pop(spec.name, None)
+        assert None is debug.traced(
+            2,
+            f"[{id(module) if module else None}] <dead> {spec.loader_state} {spec.name}:DEAD t:{id(spec.target)}"
+        )
+        spec.loader_state = self.State.DEAD
+        return spec.target
