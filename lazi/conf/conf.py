@@ -45,8 +45,7 @@ __root__: ModuleType        # <meta: root>
 __conf__: ModuleType        # <root>.conf
 __core__: str               # <root>.<meta: core>
 __auto__: str               # <conf>.<meta: auto>
-
-__keys__: set = {key for key in globals() if not key.startswith("_") and key.isupper()}
+__keys__: set               # <meta: keys>
 
 conf: dict
 
@@ -62,7 +61,7 @@ class Conf(ModuleType):
     __core__: str = f"{__root__.__name__}.{base.__meta__.get('core', 'core')}"
     __auto__: str = f"{__conf__.__name__}.{base.__meta__.get('auto', 'auto')}"
 
-    __keys__: set = {key for key in globals() if not key.startswith("_") and key.isupper()}
+    __keys__: set = {"CONF_KEYS"} | CONF_KEYS | base.__meta__.get("keys", set())
 
     conf: dict[str, object | EllipsisType] = {key: ... for key in __keys__}
 
@@ -76,6 +75,7 @@ class Conf(ModuleType):
         if (conf_no_caching := self.CONF_NO_CACHING) is not None:
             self.__CONF_NO_CACHING = conf_no_caching
         self.CONF_NO_CACHING = self.__CONF_NO_CACHING
+        self.CONF_KEYS = self.__keys__
 
     def __iter__(self) -> Iterator[tuple[str, object]]:
         return ((key, getattr(self, key)) for key in self.conf)
@@ -125,16 +125,26 @@ class Conf(ModuleType):
             super().__setattr__(key, value)
             return value
 
-        if key not in self.conf:
+        if key not in self.conf and key != "CONF_KEYS" and key not in self.CONF_KEYS:
             raise AttributeError(f"Conf key {key!r} is not defined.")
         if not self.__CONF_NO_CACHING:
+
+            if key == "CONF_KEYS" and value is not self.__keys__:
+                self.__all__ = list(set(self.__all__) | set(value))
+                for conf_key in (_ for _ in dict(self.conf) if _ != "CONF_KEYS" and _ not in value):
+                    del self.conf[conf_key]
+                for conf_key in (_ for _ in value if _ != "CONF_KEYS" and _ not in self.conf):
+                    self.conf[conf_key] = ...
+                self.conf["CONF_KEYS"] = value
+
             self.conf[key] = value
             super().__setattr__(key, value)
+
         return value
 
 
 _sys.modules[__name__] = Conf()  # Replace module with instance.
 
-__all__.extend(__keys__)
+__all__.extend(_sys.modules[__name__].__keys__)
 
 del ModuleType, EllipsisType, Iterator, ModuleInfo
