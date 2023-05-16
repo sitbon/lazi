@@ -21,38 +21,44 @@ class Finder(MetaPathFinder):
     Loader: type[Loader] = Loader
     Module: type[Module] = Module
 
-    __busy__: bool = False
-    __refs__: int = 0
-    __specs__: dict[str, Spec]
+    __finders__: list[Finder] = []
     __stack__: list[Finder] = []
 
-    finders = classproperty(lambda cls: (_ for _ in sys.meta_path if isinstance(_, cls)))
+    specs: dict[str, Spec]
+    __busy: bool = False
+    __refs: int = 0; refs = property(lambda self: self.__refs)  # noqa
+
+    meta_path = classproperty(lambda cls: (_ for _ in sys.meta_path if isinstance(_, cls)))
 
     def __init__(self):
-        self.__specs__ = {}
+        self.__finders__.append(self)
+        self.specs = {}
+
+    def __del__(self):
+        self.__finders__.remove(self)
 
     def __enter__(self) -> Finder:
         if self not in sys.meta_path:
-            assert self.__refs__ == 0, self.__refs__
+            assert self.__refs == 0, self.__refs
             assert None is debug.trace(
-                f"[{id(self)}] +{self.__class__.__name__} refs:{self.__refs__} "
-                f"inst:{len(list(self.finders))} sys:{len(sys.meta_path)} "
+                f"[{id(self)}] +{self.__class__.__name__} refs:{self.__refs} "
+                f"inst:{len(list(self.meta_path))} sys:{len(sys.meta_path)} "
             )
             sys.meta_path.insert(0, self)
             self.__stack__.append(self)
 
-        self.__refs__ += 1
+        self.__refs += 1
         return self
 
     def __exit__(self, exc_type, exc_value, traceback) -> bool:
         assert None is debug.trace(
-            f"[{id(self)}] -{self.__class__.__name__} refs:{self.__refs__} "
-            f"inst:{len(list(self.finders))} sys:{len(sys.meta_path)} "
+            f"[{id(self)}] -{self.__class__.__name__} refs:{self.__refs} "
+            f"inst:{len(list(self.meta_path))} sys:{len(sys.meta_path)} "
         )
 
-        self.__refs__ = max(self.__refs__ - 1, 0)
+        self.__refs = max(self.__refs - 1, 0)
 
-        if self.__refs__ == 0 and self in sys.meta_path:
+        if self.__refs == 0 and self in sys.meta_path:
             pop = self.__stack__.pop()
             assert pop is self, (pop, self)
             sys.meta_path.remove(self)
@@ -81,7 +87,7 @@ class Finder(MetaPathFinder):
     def find_spec(self, name: str, path: list[str] | None = None, target: ModuleType | None = None) -> Spec | None:
         assert self in self.__stack__, (self, self.__stack__)
 
-        if self.__busy__ or self.__stack__[-1] != self:
+        if self.__busy or self.__stack__[-1] != self:
             return None
 
         assert None is debug.traced(
@@ -90,28 +96,28 @@ class Finder(MetaPathFinder):
             f"stack:{len(self.__stack__)}"
         )
 
-        if (spec := self.__specs__.get(name)) is not None:
+        if (spec := self.specs.get(name)) is not None:
             assert spec.finder is self, (spec.finder, self)
             return spec
 
-        self.__busy__ = True
+        self.__busy = True
         try:
             if (spec := find_spec(name, path)) is not None:
-                spec = self.__specs__[name] = self.Spec(self, spec, path, target)
+                spec = self.specs[name] = self.Spec(self, spec, path, target)
                 assert None is debug.traced(2, f"[{id(self)}] <foun> {spec.name} L:{spec.loader_state} o:{spec.origin}")
                 if conf.FORCE_LOAD_MODULE and (module := sys.modules.get(spec.name)):
                     spec.loader.exec_module(module, spec, True)
                 return spec
         finally:
-            self.__busy__ = False
+            self.__busy = False
 
     def invalidate_caches(self) -> None:
         if not conf.SOFT_INVALIDATION:
-            while self.__specs__ and (spec := self.__specs__.popitem()[1]):
+            while self.specs and (spec := self.specs.popitem()[1]):
                 if hasattr(spec.loader, "unload_module"):
                     spec.loader.unload_module(spec)
         else:
-            self.__specs__.clear()
+            self.specs.clear()
 
         if conf.GARBAG_COLLECTION:
             gc.collect()
