@@ -65,12 +65,12 @@ class Module(ModuleType):
             if attr in module_dict:
                 return module_dict[attr]
 
-        assert None is debug.traced(
-            0 if spec.loader_state.value < spec.loader.State.LOAD.value else 1,
-            f"<attr> {spec.name}[.{attr}] <L:{spec.loader_state}>"
-        )
-
         if spec.loader_state.value <= spec.loader.State.LAZY.value:
+            assert None is debug.traced(
+                0 if spec.loader_state.value < spec.loader.State.LOAD.value else 1,
+                f"<attr> {spec.name}[.{attr}] <L:{spec.loader_state}>"
+            )
+
             spec.loader.exec_module(self, spec, False)
 
         return spec.target.__getattribute__(attr)
@@ -84,13 +84,15 @@ class Module(ModuleType):
 
             return spec.target.__setattr__(attr, valu)
 
-        assert None is debug.traced(
-            1,
-            f"<set> {spec.name}[.{attr}] = " +
-            (f'<{valu.name}>' if isinstance(valu, type(spec)) else repr(valu)) +
-            f" <L:{spec.loader_state}>"
-        )
+        if spec.loader_state.value <= spec.loader.State.LAZY.value:
+            assert None is debug.trace(
+                f"<set> {spec.name}[.{attr}] = " +
+                (f'<{valu.name}>' if isinstance(valu, type(spec)) else repr(valu)
+                    if not isinstance(valu, ModuleType) else f'<module {valu.__name__!r}>'
+                    ) +
+                f" <L:{spec.loader_state}>"
+            )
 
-        # TODO: We have recursion issues in some cases now?
-        getattr(self, attr)
+            spec.loader.exec_module(self, spec, False)
+
         return spec.target.__setattr__(attr, valu)

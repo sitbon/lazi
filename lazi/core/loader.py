@@ -55,13 +55,6 @@ class Loader(_Loader):
 
         name = spec.name  # This may be overly cautious: >>> spec.target.__getattribute__("__name__")
 
-        assert None is debug.traced(
-            1,
-            f"<exec> {name} <L:{spec.loader_state}> <l:{lazy}> <std:{spec.is_stdlib}> <bi:{spec.is_builtin}> "
-            f"<in:{name in modules}> <is-m:{modules.get(name) is module}> "
-            f"<is-t:{modules[name] is spec.target}>"
-        )
-
         if name not in modules:
             assert None is debug.trace(
                 f"<exec> {name} <L:{spec.loader_state}> <l:{lazy}> "
@@ -76,6 +69,13 @@ class Loader(_Loader):
             )
             spec.target = modules[name]
             modules[name] = module
+
+        assert None is debug.traced(
+            1,
+            f"<exec> {name} <L:{spec.loader_state}> <l:{lazy}> <std:{spec.is_stdlib}> <bi:{spec.is_builtin}> "
+            f"<in:{name in modules}> <is-m:{modules.get(name) is module}> "
+            f"<is-t:{modules[name] is spec.target}>"
+        )
 
         if not lazy or conf.FORCE_LOAD_MODULE:
             spec.loader_state = self.State.EXEC

@@ -11,42 +11,41 @@ No external dependencies.
 ```shell
 poetry add lazi
 ```
-
-```python
-"""Automatic lazy loading example.
-
-Install django to run, or change the imports.
-"""
-import lazi.auto as lazi         # Install import tracking.
-import django.test               # Import stuff.
-# print(lazi.used_count())         # Count loaded modules. <Not yet re-implemented>
-TestCase = django.test.TestCase  # Trigger lazy loading.
-# print(lazi.used_count())         # More modules were lazy loaded. <TBD>
-```
-
 ```shell
-python example.py
+DEBUG_TRACING=1 python3
+```
+```pycon
+# (lazi-py3.11) lazi λ DEBUG_TRACING=1 python
+Python 3.11.2 (main, Mar 13 2023, 12:18:29) [GCC 12.2.0] on linux
+>>> import lazi.auto
++ Finder[140307315610192] <refs:0> <inst:0>
+>>> from django import test
+<attr> django[.test] <L:State.LAZY>
+...  # A lot of output
+<class 'django.test.testcases.TestCase'>
+>>>
 ```
 
-```python
-0
-262
+### Use for specific modules:
+
+```pycon
+>>> from lazi.core import lazi
+>>> with lazi:
+...   import django
+...   print(django.VERSION)
+... 
+(4, 2, 1, 'final', 0)
+>>> _
 ```
 
-```python
-"""Manual lazy loading example.
-"""
-import lazi.core as lazi                # Import Lazi.
-django = lazi.lazy("django")            # Import stuff.
-django_test = lazi.lazy("django.test")  # Import more stuff.
-# print(lazi.used_count())              # Count loaded modules. <TBD>
-TestCase = django_test.TestCase         # Trigger lazy loading.
-# print(lazi.used_count())              # Module was lazy loaded. <TBD>
-```
+Or:
 
-```python
-0
-2
+```pycon
+>>> from lazi.core import lazy
+>>> django = lazy("django")
+>>> django.VERSION
+(4, 2, 1, 'final', 0)
+>>> _
 ```
 
 ## Configuration
