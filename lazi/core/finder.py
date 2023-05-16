@@ -104,7 +104,7 @@ class Finder(MetaPathFinder):
         try:
             if (spec := find_spec(name, path)) is not None:
                 spec = self.specs[name] = self.Spec(self, spec, path, target)
-                assert None is debug.traced(2, f"[{id(self)}] <foun> {spec.name} L:{spec.loader_state} o:{spec.origin}")
+                assert None is debug.traced(2, f"[{id(self)}] <foun> {spec.loader_state} {spec.name} o:{spec.origin}")
                 if conf.FORCE_LOAD_MODULE and (module := sys.modules.get(spec.name)):
                     spec.loader.exec_module(module, spec, True)
                 return spec

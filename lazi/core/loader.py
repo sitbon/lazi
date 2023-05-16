@@ -7,7 +7,6 @@ from enum import Enum
 from importlib.abc import Loader as _Loader
 from importlib.util import module_from_spec
 
-from lazi.conf import conf
 from lazi.util import debug
 
 __all__ = "Loader",
@@ -42,12 +41,18 @@ class Loader(_Loader):
         self.__stack__.append(self)
 
         try:
-            if (module := self.loader.create_module(spec)) is None:
+            wrap = spec.target is not None
+
+            if not wrap and spec.name in modules:
+                module = modules[spec.name]
+                assert None is debug.trace(
+                    f"[{id(module)}] <crea> {spec.loader_state} {spec.name} already-in-sys-modules type:{type(module).__name__}"
+                )
+            elif (module := spec.target if wrap else self.loader.create_module(spec)) is None:
                 module = module_from_spec(spec)
 
-            spec.loader_state = self.State.CREA
-            module = spec.finder.Module(spec, module)
-            return module
+            spec.loader_state = self.State.CREA if not wrap else self.State.LOAD
+            return spec.finder.Module(spec, module) if not isinstance(module, spec.finder.Module) else module
         finally:
             self.__stack__.pop()
 
@@ -73,9 +78,9 @@ class Loader(_Loader):
             spec.target = modules[name]
             modules[name] = module
 
-        assert None is debug.traced(1, f"[{id(module)}] <exec> {state} {name}:{nexts} std:{int(spec.stdlib)} bi:{int(spec.builtin)}")
+        assert None is debug.traced(1, f"[{id(module)}] <exec> {state} {name}:{nexts} std:{int(spec.stdlib)}")
 
-        if spec.loader_state is self.State.EXEC:
+        if nexts is self.State.EXEC:
             self.loader.exec_module(spec.target, spec, force) if isinstance(self.loader, type(self)) else \
                 self.loader.exec_module(spec.target)
             state = nexts
@@ -93,8 +98,8 @@ class Loader(_Loader):
             )
             spec.target = modules[name]
 
-        if nexts is self.State.LOAD:
-            modules[name] = spec.target
+        # if nexts is self.State.LOAD:
+        #     modules[name] = spec.target
 
     def unload_module(self, spec: Spec) -> ModuleType | None:
         module = modules.pop(spec.name, None)
