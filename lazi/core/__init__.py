@@ -1,21 +1,24 @@
-from lazi.conf import conf
+"""
+TODO:
+"""
+from lazi.conf import conf as _conf
 from .finder import Finder, __finder__
 
 __all__ = (
     "Finder", "__finder__",
-    "lazy", "context", "install", "uninstall",
+    "lazi", "lazy", "install", "uninstall",
 )
 
+conf = _conf
+lazi = __finder__
+lazy = lazi.lazy
+install = lazi.install
+uninstall = lazi.uninstall
 
-lazy = Finder.lazy
-context = __finder__
-install = Finder.install
-uninstall = Finder.uninstall
 
-
-if conf.CORE_AUTO_INSTALL:
+if _conf.CORE_AUTO_INSTALL:
     install()
 
 for _ in __all__:
-    setattr(conf.__root__, _, globals()[_])
+    setattr(_conf.__root__, _, globals()[_])
 del _

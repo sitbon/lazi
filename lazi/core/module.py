@@ -71,7 +71,7 @@ class Module(ModuleType):
         )
 
         if spec.loader_state.value <= spec.loader.State.LAZY.value:
-            spec.loader.exec_module(self, lazy=False)
+            spec.loader.exec_module(self, spec, False)
 
         return spec.target.__getattribute__(attr)
 
