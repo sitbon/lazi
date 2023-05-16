@@ -37,7 +37,7 @@ class Module(ModuleType):
     def __getattribute__(self, attr):
         spec = super().__getattribute__("__spec__")
 
-        assert None is debug.traced(2, f"<get> {spec.name}[.{attr}] <L:{spec.loader_state}>")
+        assert None is debug.traced(3, f"[{id(self)}] <GET> {spec.loader_state} {spec.name}[.{attr}]")
 
         if attr in GETATTR_PASS:
             return spec.target.__getattribute__(attr)
@@ -66,10 +66,7 @@ class Module(ModuleType):
                 return module_dict[attr]
 
         if spec.loader_state.value <= spec.loader.State.LAZY.value:
-            assert None is debug.traced(
-                0 if spec.loader_state.value < spec.loader.State.LOAD.value else 1,
-                f"<attr> {spec.name}[.{attr}] <L:{spec.loader_state}>"
-            )
+            assert None is debug.trace(f"[{id(self)}] <get> {spec.loader_state} {spec.name}[.{attr}]")
 
             spec.loader.exec_module(self, spec, False)
 
@@ -85,13 +82,7 @@ class Module(ModuleType):
             return spec.target.__setattr__(attr, valu)
 
         if spec.loader_state.value <= spec.loader.State.LAZY.value:
-            assert None is debug.trace(
-                f"<set> {spec.name}[.{attr}] = " +
-                (f'<{valu.name}>' if isinstance(valu, type(spec)) else repr(valu)
-                    if not isinstance(valu, ModuleType) else f'<module {valu.__name__!r}>'
-                    ) +
-                f" <L:{spec.loader_state}>"
-            )
+            assert None is debug.trace(f"[{id(self)}] <set> {spec.loader_state} {spec.name}[.{attr}] [{id(valu)}]")
 
             spec.loader.exec_module(self, spec, False)
 

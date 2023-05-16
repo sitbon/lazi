@@ -20,6 +20,7 @@ class Loader(_Loader):
     __stack__: list[Loader] = []
 
     class State(Enum):
+        __str__ = lambda self: self.name
         INIT = 0
         CREA = 1
         LAZY = 2
@@ -51,56 +52,43 @@ class Loader(_Loader):
     def exec_module(self, module: Module, spec: Spec | None = None, lazy: bool = True, /):
         spec = spec if spec is not None else module.__spec__
         assert spec.loader is self, (spec.loader, self)
-        assert spec.loader_state in (self.State.CREA, self.State.LAZY), spec.loader_state
 
         name = spec.name  # This may be overly cautious: >>> spec.target.__getattribute__("__name__")
-
+        state = spec.loader_state
+        nexts = self.State.EXEC if not lazy or conf.FORCE_LOAD_MODULE else self.State.LAZY
+        
+        assert state in (self.State.CREA, self.State.LAZY), spec.loader_state
+        
         if name not in modules:
-            assert None is debug.trace(
-                f"<exec> {name} <L:{spec.loader_state}> <l:{lazy}> "
-                f"<missing-in-sys-modules-before>"
-            )
+            assert None is debug.trace(f"[{id(module)}] <exec> {state} {name}:{nexts} missing-in-sys-modules-before")
             modules[name] = module
 
         elif modules[name] is not module:
             assert None is debug.trace(
-                f"<exec> {name} <L:{spec.loader_state}> <l:{lazy}> "
-                f"<replaced-in-sys-modules-before>"
+                f"[{id(module)}] <exec> {state} {name}:{nexts} replaced-in-sys-modules-before "
+                f" by:{id(modules[name])}"
             )
             spec.target = modules[name]
             modules[name] = module
 
-        assert None is debug.traced(
-            1,
-            f"<exec> {name} <L:{spec.loader_state}> <l:{lazy}> <std:{spec.is_stdlib}> <bi:{spec.is_builtin}> "
-            f"<in:{name in modules}> <is-m:{modules.get(name) is module}> "
-            f"<is-t:{modules[name] is spec.target}>"
-        )
+        assert None is debug.traced(1, f"[{id(module)}] <exec> {state} {name}:{nexts} std:{int(spec.is_stdlib)} bi:{int(spec.is_builtin)}")
 
-        if not lazy or conf.FORCE_LOAD_MODULE:
+        if nexts is self.State.EXEC:
             spec.loader_state = self.State.EXEC
             self.loader.exec_module(module)
             spec.loader_state = self.State.LOAD
+            assert None is debug.traced(3, f"[{id(module)}] <EXEC> {state} {name}:{nexts}")
+
         else:
             spec.loader_state = self.State.LAZY
 
-        assert None is debug.traced(
-            3,
-            f"<sys> {name} <L:{spec.loader_state}> <l:{lazy}> <m:{module}:{module.__name__}> "
-            f"<in:{name in modules}> <is-m:{modules[name] is module}> "
-            f"<is-t:{modules[name] is spec.target}>"
-        )
-
         if name not in modules:
-            assert None is debug.trace(
-                f"<exec> {name} <L:{spec.loader_state}> <l:{lazy}> "
-                f"<deleted-from-sys-modules-after>"
-            )
+            assert None is debug.trace(f"[{id(module)}] <exec> {state} {name}:{nexts} deleted-from-sys-modules-after")
 
         elif modules[name] is not spec.target and modules[name] is not module:
             assert None is debug.trace(
-                f"<exec> {name} <L:{spec.loader_state}> <l:{lazy}> "
-                f"<replaced-in-sys-modules-after>"
+                f"[{id(module)}] <exec> {state} {name}:{nexts} replaced-in-sys-modules-after "
+                f" by:{id(modules[name])}"
             )
             spec.target = modules[name]
 
@@ -108,7 +96,7 @@ class Loader(_Loader):
         assert spec.loader is self, (spec.loader, self)
         assert spec.loader_state is self.State.LOAD, spec.loader_state
 
-        # NOTE: This alone seems ineffective in terms of freeing memory.
+        # NOTE: This alone seems ineffective in terms of freeing memory (when called from invalidate_caches()).
         # TODO: Re-enable and watch GC activity.
         # if (name := spec.target.__name__) in modules:
         #     del modules[name]

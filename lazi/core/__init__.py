@@ -1,6 +1,3 @@
-"""
-TODO:
-"""
 from lazi.conf import conf as _conf
 from .finder import Finder, __finder__
 

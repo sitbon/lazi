@@ -18,12 +18,18 @@ DEBUG_TRACING=1 python3
 # (lazi-py3.11) lazi λ DEBUG_TRACING=1 python
 Python 3.11.2 (main, Mar 13 2023, 12:18:29) [GCC 12.2.0] on linux
 >>> import lazi.auto
-+ Finder[140307315610192] <refs:0> <inst:0>
+[140402520740240] +Finder refs:0 inst:0 sys:5
 >>> from django import test
-<attr> django[.test] <L:State.LAZY>
-...  # A lot of output
+[140402520858096] <get> LAZY django[.test]
+[140402518572896] <set> LAZY django.utils[.version] [140402518571056]
+[140402518571056] <get> LAZY django.utils.version[.get_version]
+[140402518606128] <get> LAZY django.utils.regex_helper[._lazy_re_compile]
+[140402518607408] <get> LAZY django.utils.functional[.SimpleLazyObject]
+>>> test.TestCase
+[140402519121472] <get> LAZY django.test[.TestCase]
+# ... A lot of output ...
 <class 'django.test.testcases.TestCase'>
->>>
+>>> _
 ```
 
 ### Use for specific modules:
