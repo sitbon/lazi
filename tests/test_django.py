@@ -24,3 +24,13 @@ def test_django_version_import():
         version = django.VERSION
         debug.trace("test_django_version_import: ^- VERSION: ", version)
         assert isinstance(version, tuple), version
+
+
+def test_asgiref():
+    from lazi.util import debug
+    from lazi.core import lazi
+
+    with lazi:
+        debug.trace("-> from asgiref.sync import sync_to_async ->")
+        from asgiref.sync import sync_to_async
+        debug.trace("^- from asgiref.sync import sync_to_async -^")
