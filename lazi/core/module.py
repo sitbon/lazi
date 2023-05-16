@@ -33,6 +33,20 @@ class Module(ModuleType):
         self.__spec__ = module.__spec__ = spec
         spec.target = module
 
+        for module_attr, attr in MODULE_SPEC_ATTR_MAP.items():
+            match attr:
+                case "__file__":
+                    if spec.has_location:
+                        module.__file__ = spec.origin
+                case "__cached__":
+                    if spec.has_location and spec.cached is not None:
+                        module.__cached__ = spec.cached
+                case "__path__":
+                    if spec.submodule_search_locations is not None:
+                        module.__path__ = spec.submodule_search_locations
+                case _:
+                    setattr(module, module_attr, getattr(spec, attr))
+
     def __getattribute__(self, attr):
         spec = super().__getattribute__("__spec__")
 
@@ -41,20 +55,7 @@ class Module(ModuleType):
         if attr in GETATTR_PASS and (index := GETATTR_PASS.index(attr)) >= 0:
             return spec if not index else spec.target.__getattribute__(attr)
 
-        if name := MODULE_SPEC_ATTR_MAP.get(attr):
-            match attr:
-                case "__file__":
-                    if spec.has_location:
-                        return spec.origin
-                case "__cached__":
-                    if spec.has_location and spec.cached is not None:
-                        return spec.cached
-                case "__path__":
-                    if spec.submodule_search_locations is not None:
-                        return spec.submodule_search_locations
-                case _:
-                    return getattr(spec, name)
-
+        if attr in MODULE_SPEC_ATTR_MAP:
             return spec.target.__getattribute__(attr)
 
         if spec.loader_state.value <= spec.loader.State.LAZY.value:
