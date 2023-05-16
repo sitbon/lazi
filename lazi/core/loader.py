@@ -99,7 +99,7 @@ class Loader(_Loader):
             )
             spec.target = modules[name]
 
-        # if nexts is self.State.LOAD:
+        # if nexts is self.State.LOAD and spec.target is not None:
         #     modules[name] = spec.target
 
     def unload_module(self, spec: Spec) -> ModuleType | None:
