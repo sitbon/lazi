@@ -15,8 +15,7 @@ poetry add lazi
 DEBUG_TRACING=1 python3
 ```
 ```pycon
-# (lazi-py3.11) lazi λ DEBUG_TRACING=1 python
-Python 3.11.2 (main, Mar 13 2023, 12:18:29) [GCC 12.2.0] on linux
+Python 3.11.2
 >>> import lazi.auto
 [140402520740240] +Finder refs:0 inst:0 sys:5
 >>> from django import test
