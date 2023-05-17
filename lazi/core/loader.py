@@ -11,7 +11,6 @@ from types import ModuleType
 from typing import ForwardRef
 from enum import IntEnum
 from importlib.abc import Loader as _Loader
-from importlib.util import module_from_spec
 
 from lazi.conf import conf
 from lazi.util import debug
@@ -53,7 +52,7 @@ class Loader(_Loader):
 
         try:
             target = spec.target if spec.target is not None else self.loader.create_module(spec)
-            target = module_from_spec(spec) if target is None else target
+            target = ModuleType(spec.name) if target is None else target
             target = spec.finder.Module(spec, target) if not isinstance(target, spec.finder.Module) else target
 
             spec.loader_state = Loader.State.CREA
