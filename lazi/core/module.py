@@ -32,6 +32,7 @@ class Module(ModuleType):
         super().__init__(spec.name)
         self.__spec__ = module.__spec__ = spec
         spec.target = module
+        self.__spec__ = spec
 
         for module_attr, attr in MODULE_SPEC_ATTR_MAP.items():
             match attr:
@@ -72,6 +73,8 @@ class Module(ModuleType):
 
     def __setattr__(self, attr, valu):
         if attr == "__spec__":
+            if (target := getattr(valu, "target", None)) is not None:
+                target.__setattr__(attr, valu)
             return super().__setattr__(attr, valu)
 
         spec = super().__getattribute__("__spec__")
