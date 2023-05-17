@@ -8,10 +8,10 @@ DEBUG_TRACING: int = 0                  # Enable debug traces. Currently using l
 #
 LAZI_AUTO_INSTALL: bool = True          # Automatically install when importing lazi.auto.
 CORE_AUTO_INSTALL: bool = False         # Automatically install when importing lazi.core.
-FORCE_LOAD_MODULE: bool = False         # Immediately call exec_module() on imported modules.
+DISABLE_LOAD_HOOK: bool = False         # Disable all loader hooks.
 NO_STDLIB_HOOKING: bool = False         # Disable spec loader hooking for stdlib modules.
 NO_STDLIB_LAZLOAD: bool = False         # Disable lazy loading for stdlib modules (when not NO_STDLIB_HOOKING).
-DISABLE_LOAD_HOOK: bool = False         # Disable all loader hooks.
+FORCE_LOAD_MODULE: bool = False         # Immediately call exec_module() on imported modules.
 SOFT_INVALIDATION: bool = False         # Keep modules in sys.modules after cache invalidation.
 GARBAG_COLLECTION: bool = (             # Enable garbage collection on cache invalidation.
     not SOFT_INVALIDATION)              # - Only makes sense if SOFT_INVALIDATION is False.

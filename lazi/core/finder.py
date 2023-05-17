@@ -5,6 +5,7 @@ import sys
 from types import ModuleType
 from importlib.util import find_spec, module_from_spec
 from importlib.abc import MetaPathFinder
+from pathlib import Path
 
 from lazi.conf import conf
 from lazi.util import classproperty, debug
@@ -94,24 +95,42 @@ class Finder(MetaPathFinder):
 
         if (spec := self.specs.get(name)) is not None:
             assert spec.finder is self, (spec.finder, self)
+
             if __debug__:
+                traced = False
                 if spec.path != path:
                     assert ... is debug.trace(
-                        f"[{id(self)}] FIND {name} p:{path} != spec.p:{spec.path}"
+                        f"[{id(self)}] FINC {name} p:{path} != spec.p:{spec.path}"
                     ), "spec.path != path"
+                    traced = True
                 if spec.target != target:
                     assert ... is debug.trace(
-                        f"[{id(self)}] FIND {name} t:{target!r} != spec.t:{spec.target!r}"
+                        f"[{id(self)}] FINC {name} t:{target!r} != spec.t:{spec.target!r}"
                     ), "spec.target != target"
+                    traced = True
+                if not traced:
+                    assert None is debug.traced(
+                        2, f"[{id(self)}] FINC {name} p:{len(spec.path) if path is not None else '-'} "
+                           f"l:{spec.loader_state if spec.loader_state is not None else '-'} "
+                           f"o:{Path(spec.origin).name if spec.origin else '-'} "
+                    )
+
             return spec
 
         self.__busy = True
+
         try:
             if (spec := find_spec(name, path)) is not None:
                 spec = self.specs[name] = self.Spec(self, spec, path, target)
-                assert None is debug.traced(2, f"[{id(self)}] FOUN {spec.name}:{spec.loader_state} o:{spec.origin}")
-                if conf.FORCE_LOAD_MODULE and (module := sys.modules.get(spec.name)):
-                    spec.loader.exec_module(module, spec, True)
+                assert None is debug.traced(
+                    2, f"[{id(self)}] FOUN {spec.name}:{spec.loader_state} "
+                       f"p:{len(spec.path) if path is not None else '-'} "
+                       f"o:{Path(spec.origin).name if spec.origin else '-'} ")
+
+                # if conf.FORCE_LOAD_MODULE and (module := sys.modules.get(spec.name)):
+                #     # I think this is flawed because it's still too early to load the module.
+                #     spec.loader.exec_module(module, spec, True)
+
                 return spec
         finally:
             self.__busy = False

@@ -18,7 +18,8 @@ Module = ForwardRef("Module")
 
 class Loader(_Loader):
     loader: _Loader
-    __stack__: list[Loader] = []
+    __busy: bool = False
+    __forc: bool = False
 
     class State(Enum):
         __str__ = lambda self: self.name
@@ -37,29 +38,30 @@ class Loader(_Loader):
     def create_module(self, spec: Spec):
         assert spec.loader is self, (spec.loader, self)
 
-        if self in self.__stack__:
+        if self.__busy:
             return None
 
-        self.__stack__.append(self)
+        self.__busy = True
 
         try:
-            wrap = spec.target is not None
+            target = spec.target if spec.target is not None else self.loader.create_module(spec)
+            target = module_from_spec(spec) if target is None else target
+            target = spec.finder.Module(spec, target) if not isinstance(target, spec.finder.Module) else target
 
-            if not wrap and spec.name in modules:
-                module = modules[spec.name]
-                assert None is debug.trace(
-                    f"[{id(module)}] {spec.loader_state} {spec.name} already-in-sys-modules type:{type(module).__name__}"
-                )
-            elif (module := spec.target if wrap else self.loader.create_module(spec)) is None:
-                module = module_from_spec(spec)
+            spec.loader_state = self.State.CREA
 
-            spec.loader_state = self.State.CREA if not wrap else self.State.LOAD
-            return spec.finder.Module(spec, module) if not isinstance(module, spec.finder.Module) else module
+            if conf.FORCE_LOAD_MODULE:
+                self.__forc = True
+
+            return target
+
         finally:
-            self.__stack__.pop()
+            self.__busy = False
 
-    def exec_module(self, module: Module, spec: Spec | None = None, force: bool = False, /):
+    def exec_module(self, module: Module, spec: Spec | None = None, force: bool | None = None, /):
         spec = spec if spec is not None else module.__spec__
+        force = force if force is not None else self.__forc
+
         assert spec.loader is self, (spec.loader, self)
 
         name = spec.name
@@ -72,13 +74,11 @@ class Loader(_Loader):
 
         nexts = spec.loader_state = self.State.EXEC if force else self.State.LAZY
 
-        if (mod := modules.get(name)) is None:
-            assert None is debug.trace(f"[{id(module)}] {state} {name}:{nexts} [{id(spec.target)}]->[self] (before)")
-            modules[name] = module
-
-        elif mod is not module:
+        if (mod := modules.get(name)) is not module:
             assert None is debug.trace(
-                f"[{id(module)}] {state} {name}:{nexts} [{id(spec.target)}]->[{id(mod)}] (before)"
+                f"[{id(module)}] {state} {name}:{nexts} "
+                f"[{id(spec.target)}]::[{id(mod) if mod is not spec.target else 'same' if mod is not None else '-'}] "
+                "(before)"
             )
             spec.target = mod
             modules[name] = module
@@ -98,20 +98,18 @@ class Loader(_Loader):
                 nexts = spec.loader_state = self.State.LOAD
 
             except Exception as e:
-                assert None is debug.trace(
-                    f"[{id(module)}] {state} {name}:{nexts} [{id(spec.target)}] !!!! {type(e).__name__}: {e}"
+                assert None is debug.traced(
+                    -1, f"[{id(module)}] {state} {name}:{nexts} [{id(spec.target)}] !!!! {type(e).__name__}: {e}"
                 )
                 raise
             else:
                 assert None is debug.traced(1, f"[{id(module)}] {state} {name}:{nexts} [{id(spec.target)}] ++++ ")
 
-        if (mod := modules.get(name)) is None:
-            assert None is debug.trace(f"[{id(module)}] {state} {name}:{nexts} [{id(spec.target)}]->[None] (after)")
-            # TODO: del spec.target? Or set modules[name] = module?
-
-        elif mod is not module:
+        if (mod := modules.get(name)) is not module:
             assert None is debug.trace(
-                f"[{id(module)}] {state} {name}:{nexts} [{id(spec.target)}]->[{id(mod)}] (after)"
+                f"[{id(module)}] {state} {name}:{nexts} "
+                f"[{id(spec.target)}]::[{id(mod) if mod is not spec.target else 'same' if mod is not None else '-'}] "
+                "(after)"
             )
             spec.target = mod
             modules[name] = module
@@ -122,7 +120,7 @@ class Loader(_Loader):
     def unload_module(self, spec: Spec) -> ModuleType | None:
         module = modules.pop(spec.name, None)
         assert None is debug.traced(
-            2, f"[{id(module) if module else None}] {spec.loader_state} {spec.name}:DEAD t:{id(spec.target)}"
+            2, f"[{id(module) if module else 'not-in-modules!'}] {spec.loader_state} {spec.name}:DEAD [{id(spec.target)}]"
         )
         spec.loader_state = self.State.DEAD
         return spec.target

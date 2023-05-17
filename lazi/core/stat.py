@@ -21,6 +21,9 @@ class Stat:
             for finder in __finder__.__finders__
         ))
 
+    # Total number of Finder instances.
+    find_toti: int = field(default_factory=lambda: sum(1 for finder in __finder__.__finders__))
+
     # Number of modules in the init state.
     load_init: int = field(default_factory=lambda: sum(
             sum(1 for spec in finder.specs.values() if spec.loader_state is finder.Loader.State.INIT)
@@ -73,7 +76,7 @@ class Stat:
             for finder in __finder__.__finders__
         ))
 
-    # Number of specs with a hooked loader.
+    # Number of specs with a hooked loader. Should be the sum of all the load_* stats above.
     load_hook: int = field(default_factory=lambda: sum(
             sum(1 for spec in finder.specs.values() if isinstance(spec.loader, finder.Loader))
             for finder in __finder__.__finders__

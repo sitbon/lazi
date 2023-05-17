@@ -1,10 +1,11 @@
+from lazi.util.debug import track, log
+from lazi.core.stat import Stat
+from lazi.core import lazi
 
 
 def test_pygments_formatter():
-    from lazi.util import debug
-    from lazi.core import Finder
-
-    with Finder():
-        debug.trace("-> from pygments.formatters.terminal import TerminalFormatter ->")
-        from pygments.formatters.terminal import TerminalFormatter
-        debug.trace("^- from pygments.formatters.terminal import TerminalFormatter -^")
+    with lazi:
+        with track("import pygments"):
+            log(Stat())
+            from pygments.formatters.terminal import TerminalFormatter
+            log(Stat())
