@@ -30,6 +30,7 @@ class Module(ModuleType):
 
     def __init__(self, spec: Spec, module: ModuleType):
         super().__init__(spec.name)
+        self.__spec__ = module.__spec__ = spec
         spec.target = module
         self.__spec__ = spec
 
@@ -61,10 +62,10 @@ class Module(ModuleType):
         if attr in MODULE_SPEC_ATTR_MAP:
             return spec.target.__getattribute__(attr)
 
-        if not (has := hasattr(spec.target, attr)) and spec.loader_state.value <= spec.loader.State.LAZY.value:
+        if spec.loader_state.value <= spec.loader.State.LAZY.value:
             assert None is debug.trace(
                 f"[{id(self)}] {spec.loader_state} >>>> [{id(spec.target or self)}] "
-                f"{spec.f_name}[.{attr}] {'+' if not has else ''}"
+                f"{spec.f_name}[.{attr}]"
             )
             spec.loader.exec_module(self, spec, True)
 
@@ -83,13 +84,12 @@ class Module(ModuleType):
                f"{spec.f_name}[.{attr}] = [{id(valu)}]"
         )
 
-        has = hasattr(spec.target, attr)
         spec.target.__setattr__(attr, valu)
 
-        if not has and attr not in SETATTR_PASS and spec.loader_state.value <= spec.loader.State.LAZY.value:
+        if attr not in SETATTR_PASS and spec.loader_state.value <= spec.loader.State.LAZY.value:
             assert None is debug.trace(
                 f"[{id(self)}] {spec.loader_state} <<<< [{id(spec.target or self)}] "
-                f"{spec.f_name}[.{attr}] = [{id(valu)}] {'+' if not has else ''}"
+                f"{spec.f_name}[.{attr}] = [{id(valu)}]"
             )
             # spec.loader.exec_module(self, spec, True)
             # # spec.target.__setattr__(attr, valu)  # ?
