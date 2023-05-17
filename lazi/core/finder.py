@@ -11,8 +11,9 @@ from __future__ import annotations
 import gc
 import sys
 from types import ModuleType
-from importlib.util import find_spec, module_from_spec
 from importlib.abc import MetaPathFinder
+from importlib.machinery import ModuleSpec
+from importlib.util import module_from_spec
 from pathlib import Path
 
 from lazi.conf import conf
@@ -102,27 +103,43 @@ class Finder(MetaPathFinder):
         if self.__busy or self.__stack__[-1] != self:
             return None
 
-        assert None is debug.traced(2, f"[{id(self)}] SPEC FIND {name} [{len(path) if path is not None else '*'}]")
+        assert None is debug.traced(
+            2 if target is None else 1,
+            f"[{id(self)}] SPEC FIND {name} [{len(path) if path is not None else '*'}] "
+            f"[{id(target) if target is not None else '-'}]"
+        )
 
         if (spec := self.specs.get(name)) is not None:
             assert spec.finder is self, (spec.finder, self)
+            if path is not None:
+                spec.path = path
+            if target is not None:
+                spec.target = target
             return spec
 
-        self.__busy = True
+        if (spec := self._find_spec(name, path)) is not None:
 
-        try:
-            if (spec := find_spec(name, path)) is not None:
-
+            if not isinstance(spec, self.Spec):
                 spec = self.specs[name] = self.Spec(self, spec, path, target)
+            else:
+                if path is not None:
+                    spec.path = path
+                if target is not None:
+                    spec.target = target
 
-                assert None is debug.traced(
-                    1, f"[{id(self)}] FIND {spec.loader_state} {spec.f_name} "
-                       f"[{Path(c).suffix[1:] if (c:=spec.cached) is not None else Path(o).suffix[1:] if (o:=spec.origin) is not None else '.'}]"
-                )
+            assert None is debug.traced(
+                1 if (target := spec.target) is None else 0,  # NB: Alters state in assert, do not use variable later.
+                f"[{id(self)}] FIND {spec.loader_state} {spec.f_name} "
+                f"[{Path(c).suffix[1:] if (c:=spec.cached) else Path(o).suffix[1:] if (o:=spec.origin) else '-'}] "
+                f"[{id(target) if target is not None else '-'}]"
+            )
 
+            return spec
+
+    def _find_spec(self, name: str, path: list[str] | None = None) -> ModuleSpec | None:
+        for finder in (_ for _ in sys.meta_path if _ is not self):
+            if (spec := finder.find_spec(name, path)) is not None:
                 return spec
-        finally:
-            self.__busy = False
 
     def invalidate_caches(self) -> None:
         if not conf.SOFT_INVALIDATION:
