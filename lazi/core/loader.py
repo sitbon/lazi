@@ -78,25 +78,24 @@ class Loader(_Loader):
         name_ = spec.f_name
         state = spec.loader_state
         nexts = Loader.State.LAZY if lazy else Loader.State.EXEC
+        target = spec.target
 
         assert state in (Loader.State.CREA, Loader.State.LAZY), state
 
-        if (mod := modules.get(name)) is not module:
+        if (mod := modules.get(name)) is not module and mod is not None:
             assert None is debug.trace(
-                f"[{id(module)}] {state} {nexts} [{id(spec.target) if spec.target is not None else '*'*15}] {name_} "
-                f"::[{id(mod) if mod is not spec.target else 'same' if mod is not None else '-'}] "
+                f"[{id(module)}] {state} {nexts} [{id(target) if target is not None else '*'*15}] {name_} "
+                f"::[{id(mod) if mod is not target else 'same' if mod is not None else '-'}] "
                 "(before)"
             )
 
-            if mod is not None:
-                spec.target = mod
-
+            spec.target = target = mod
             modules[name] = module
 
         assert None is debug.traced(
             1,  # if nexts is Loader.State.EXEC else 2,
-            f"[{id(module)}] {state} {nexts} [{id(spec.target) if spec.target is not None else '*'*15}] {name_} "
-            f"{'>>>> ' if nexts is Loader.State.EXEC else '.... '}{'(std) ' if spec.stdlib else ''}"
+            f"[{id(module)}] {state} {nexts} [{id(target) if target is not None else '*'*15}] {name_} "
+            f"{'>>>> ' if nexts is Loader.State.EXEC else '.... '}"
         )
 
         if nexts < Loader.State.EXEC:
@@ -106,47 +105,51 @@ class Loader(_Loader):
         try:
             spec.loader_state = state = nexts
 
-            self.loader.exec_module(spec.target if spec.target is not None else module)
+            self.loader.exec_module(target if target is not None else module)
 
             state = nexts
             spec.loader_state = nexts = Loader.State.LOAD
+            target = spec.target
 
             assert None is debug.traced(
                 1,  # if nexts is Loader.State.LOAD else 2,
-                f"[{id(module)}] {state} {nexts} [{id(spec.target or module)}] {name_} "
-                f"{'++++ ' if nexts is Loader.State.LOAD else '?!?! '}"
+                f"[{id(module)}] {state} {nexts} [{id(target) if target is not None else '*'*15}] {name_} "
+                f"++++ "
             )
 
         except Exception as e:
             spec.loader_state = nexts = Loader.State.DEAD
             assert None is debug.traced(
-                -1, f"[{id(module)}] {state} {nexts} [{id(spec.target or module)}] {name_}\n" +
+                -1, f"[{id(module)}] {state} {nexts} [{id(target) if target is not None else '*'*15}] {name_}\n" +
                     " " * 18 + f"!!!! {type(e).__name__}: {e}"
             )
             raise
 
-        if (mod := modules.get(name)) is not module:
+        if (mod := modules.get(name)) is not module and mod is not None:
             assert None is debug.trace(
-                f"[{id(module)}] {state} {nexts} [{id(spec.target or module)}] {name_} "
-                f"::[{id(mod) if mod is not spec.target else 'same' if mod is not None else '-'}] "
+                f"[{id(module)}] {state} {nexts} [{id(target) if target is not None else '*'*15}] {name_} "
+                f"::[{id(mod) if mod is not target else 'same' if mod is not None else '-'}] "
                 "(after)"
             )
-            spec.target = mod
+
+            spec.target = target = mod
             modules[name] = module
 
-        # if nexts is Loader.State.LOAD and spec.target is not None:
-        #     modules[name] = spec.target
+        # if nexts is Loader.State.LOAD and target is not None:
+        #     modules[name] = target
 
     def invalidate_caches(self, spec: Spec | None = None) -> None:
         spec = spec if spec is not None else self.spec
-
         module = modules.pop(spec.name, None)
 
         assert None is debug.traced(
-            2, f"[{id(module) if module else 'not-in-modules!'}] "
+            2, f"[{id(module) if module else '*'*15}] "
                f"{spec.loader_state} DEAD [{id(spec.target) if spec.target else '*'*15}] {spec.f_name}"
         )
 
         spec.loader = self.loader
-        spec.loader_state = Loader.State.DEAD
+        spec.loader_state = None  # type: ignore
         spec.target = None
+        self.__forc = False
+        self.spec = None  # type: ignore
+        self.loader = None  # type: ignore
