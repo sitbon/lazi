@@ -51,25 +51,30 @@ class Module(ModuleType):
     def __getattribute__(self, attr):
         spec = super().__getattribute__("__spec__")
 
+        if (target := getattr(spec, "target", None)) is None:
+            if attr == "__spec__":
+                return spec
+            return super().__getattribute__(attr)
+
         assert None is debug.traced(
-            3, f"[{id(self)}] {spec.loader_state} **** [{id(spec.target or self)}] "
+            3, f"[{id(self)}] {spec.loader_state} **** [{id(target) if target is not None else '*' * 15}] "
                f"{spec.f_name}[.{attr}]"
         )
 
         if attr in GETATTR_PASS and (index := GETATTR_PASS.index(attr)) >= 0:
-            return spec if not index else spec.target.__getattribute__(attr)
+            return spec if not index else target.__getattribute__(attr)
 
         if attr in MODULE_SPEC_ATTR_MAP:
-            return spec.target.__getattribute__(attr)
+            return target.__getattribute__(attr)
 
         if spec.loader_state.value <= spec.loader.State.LAZY.value:
             assert None is debug.trace(
-                f"[{id(self)}] {spec.loader_state} >>>> [{id(spec.target or self)}] "
+                f"[{id(self)}] {spec.loader_state} >>>> [{id(target) if target is not None else '*' * 15}] "
                 f"{spec.f_name}[.{attr}]"
             )
             spec.loader.exec_module(self, spec, True)
 
-        return spec.target.__getattribute__(attr)
+        return spec.target.__getattribute__(attr)  # NB: Don't use `target` here, as it may have changed.
 
     def __setattr__(self, attr, valu):
         if attr == "__spec__":
@@ -80,16 +85,20 @@ class Module(ModuleType):
         spec = super().__getattribute__("__spec__")
 
         assert None is debug.traced(
-            3, f"[{id(self)}] {spec.loader_state} %%%% [{id(spec.target or self)}] "
+            3, f"[{id(self)}] {spec.loader_state} %%%% [{id(spec.target) if spec.target is not None else '*' * 15}] "
                f"{spec.f_name}[.{attr}] = [{id(valu)}]"
         )
 
-        spec.target.__setattr__(attr, valu)
+        if (target := getattr(spec, "target", None)) is None:
+            return super().__setattr__(attr, valu)
 
         if attr not in SETATTR_PASS and spec.loader_state.value <= spec.loader.State.LAZY.value:
             assert None is debug.trace(
-                f"[{id(self)}] {spec.loader_state} <<<< [{id(spec.target or self)}] "
+                f"[{id(self)}] {spec.loader_state} <<<< [{id(target) if target is not None else '*' * 15}] "
                 f"{spec.f_name}[.{attr}] = [{id(valu)}]"
             )
-            # spec.loader.exec_module(self, spec, True)
-            # # spec.target.__setattr__(attr, valu)  # ?
+
+            # target.__setattr__(attr, valu)  # Preload the variable?
+            spec.loader.exec_module(self, spec, True)
+
+        spec.target.__setattr__(attr, valu)  # NB: Don't use `target` here, as it may have changed.
