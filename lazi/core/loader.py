@@ -84,9 +84,8 @@ class Loader(_Loader):
 
         if (mod := modules.get(name)) is not module:
             assert None is debug.trace(
-                f"[{id(module)}] {state} {nexts}:{name_} "
-                f"[{id(spec.target)}]::"
-                f"[{id(mod) if mod is not None and mod is not spec.target else 'same' if mod is not None else '-'}] "
+                f"[{id(module)}] {state} {nexts} [{id(spec.target) if spec.target is not None else '*'*15}] {name_} "
+                f"::[{id(mod) if mod is not spec.target else 'same' if mod is not None else '-'}] "
                 "(before)"
             )
 
@@ -139,18 +138,16 @@ class Loader(_Loader):
         # if nexts is Loader.State.LOAD and spec.target is not None:
         #     modules[name] = spec.target
 
-    def invalidate_caches(self, spec: Spec | None = None) -> ModuleType | None:
+    def invalidate_caches(self, spec: Spec | None = None) -> None:
         spec = spec if spec is not None else self.spec
-        name_ = f"[{parent}.]{spec.name}" if (parent := spec.parent) and parent != spec.name else spec.name
+
         module = modules.pop(spec.name, None)
+
         assert None is debug.traced(
             2, f"[{id(module) if module else 'not-in-modules!'}] "
-               f"{spec.loader_state} DEAD [{id(spec.target) if spec.target else ' '*15}] {name_}"
+               f"{spec.loader_state} DEAD [{id(spec.target) if spec.target else '*'*15}] {spec.f_name}"
         )
 
         spec.loader = self.loader
         spec.loader_state = Loader.State.DEAD
-        target = spec.target
         spec.target = None
-
-        return target
