@@ -36,9 +36,12 @@ class Finder(MetaPathFinder):
         self.__finders__.append(self)
         self.specs = {}
 
-    def __del__(self):
-        assert None is debug.traced(4, f"[{id(self)}] DEAD {self.__class__.__name__} count:{len(self.__finders__)}")
-        self.__finders__.remove(self)
+    # def __del__(self):
+    #     assert None is debug.traced(
+    #         4, f"[{id(self)}] DEAD {self.__class__.__name__} count:{len(self.__finders__)} in:{self in self.__finders__}"
+    #     )
+    #     if self in self.__finders__:
+    #         self.__finders__.remove(self)
 
     def __enter__(self) -> Finder:
         if self not in sys.meta_path:
@@ -54,11 +57,6 @@ class Finder(MetaPathFinder):
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        assert None is debug.trace(
-            f"[{id(self)}] EXIT {self.__class__.__name__} refs:{self.__refs} "
-            f"inst:{len(list(self.meta_path))} sys:{len(sys.meta_path)} "
-        )
-
         self.__refs = max(self.__refs - 1, 0)
 
         if self.__refs == 0 and self in sys.meta_path:
@@ -66,6 +64,11 @@ class Finder(MetaPathFinder):
             assert pop is self, (pop, self)
             sys.meta_path.remove(self)
             self.invalidate_caches()
+
+        assert None is debug.trace(
+            f"[{id(self)}] EXIT {self.__class__.__name__} refs:{self.__refs} "
+            f"inst:{len(list(self.meta_path))} sys:{len(sys.meta_path)} "
+        )
 
     def lazy(self, name: str, path: list[str] | None = None, target: ModuleType | None = None) -> ModuleType:
         pop = False
@@ -91,41 +94,27 @@ class Finder(MetaPathFinder):
         if self.__busy or self.__stack__[-1] != self:
             return None
 
-        assert None is debug.traced(1, f"[{id(self)}] FIND {name}")
+        assert None is debug.traced(2, f"[{id(self)}] SPEC {name}:FIND [{len(path) if path is not None else '*'}]")
 
         if (spec := self.specs.get(name)) is not None:
             assert spec.finder is self, (spec.finder, self)
-
-            if __debug__:
-                traced = False
-                if spec.path != path:
-                    assert ... is debug.trace(
-                        f"[{id(self)}] FINC {name} p:{path} != spec.p:{spec.path}"
-                    ), "spec.path != path"
-                    traced = True
-                if spec.target != target:
-                    assert ... is debug.trace(
-                        f"[{id(self)}] FINC {name} t:{target!r} != spec.t:{spec.target!r}"
-                    ), "spec.target != target"
-                    traced = True
-                if not traced:
-                    assert None is debug.traced(
-                        2, f"[{id(self)}] FINC {name} p:{len(spec.path) if path is not None else '-'} "
-                           f"l:{spec.loader_state if spec.loader_state is not None else '-'} "
-                           f"o:{Path(spec.origin).name if spec.origin else '-'} "
-                    )
-
             return spec
 
         self.__busy = True
 
         try:
             if (spec := find_spec(name, path)) is not None:
+
+                # if spec.loader is None:
+                #     # This is a namespace package, don't bother with it.
+                #     return spec
+
                 spec = self.specs[name] = self.Spec(self, spec, path, target)
+
                 assert None is debug.traced(
-                    2, f"[{id(self)}] FOUN {spec.name}:{spec.loader_state} "
-                       f"p:{len(spec.path) if path is not None else '-'} "
-                       f"o:{Path(spec.origin).name if spec.origin else '-'} ")
+                    1, f"[{id(self)}] FIND {spec.name}:{spec.loader_state} "
+                       f"[{len(spec.path) if path is not None else '*'}] "
+                       f"{Path(spec.origin).suffix[1:] if spec.origin is not None else '.'}")
 
                 # if conf.FORCE_LOAD_MODULE and (module := sys.modules.get(spec.name)):
                 #     # I think this is flawed because it's still too early to load the module.
