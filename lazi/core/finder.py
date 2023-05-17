@@ -13,7 +13,7 @@ import sys
 from types import ModuleType
 from importlib.abc import MetaPathFinder
 from importlib.machinery import ModuleSpec
-from importlib.util import module_from_spec
+from importlib import import_module
 from pathlib import Path
 
 from lazi.conf import conf
@@ -41,21 +41,27 @@ class Finder(MetaPathFinder):
     meta_path = classproperty(lambda cls: (_ for _ in sys.meta_path if isinstance(_, cls)))
 
     def __init__(self):
-        assert None is debug.traced(4, f"[{id(self)}] INIT {self.__class__.__name__} count:{len(self.__finders__)}")
+        assert None is debug.traced(3, f"[{id(self)}] INIT {self.__class__.__name__} count:{len(self.__finders__)}")
         self.__finders__.append(self)
         self.specs = {}
 
-    # def __del__(self):
-    #     assert None is debug.traced(
-    #         4, f"[{id(self)}] DEAD {self.__class__.__name__} count:{len(self.__finders__)} in:{self in self.__finders__}"
-    #     )
-    #     if self in self.__finders__:
-    #         self.__finders__.remove(self)
+    def __del__(self):
+        try:
+            if self in self.__finders__:
+                self.__finders__.remove(self)
+
+            self.invalidate_caches()
+        except Exception as e:
+            assert None is debug.traced(
+                -1,
+                f"[{id(self)}] DEL! {self.__class__.__name__} !!!! {type(e).__name__}: {e}"
+            )
 
     def __enter__(self) -> Finder:
         if self not in sys.meta_path:
             assert self.__refs == 0, self.__refs
-            assert None is debug.trace(
+            assert None is debug.traced(
+                2,
                 f"[{id(self)}] HOOK {self.__class__.__name__} refs:{self.__refs} "
                 f"inst:{len(list(self.meta_path))} sys:{len(sys.meta_path)} "
             )
@@ -72,30 +78,16 @@ class Finder(MetaPathFinder):
             pop = self.__stack__.pop()
             assert pop is self, (pop, self)
             sys.meta_path.remove(self)
-            self.invalidate_caches()
 
-        assert None is debug.trace(
+        assert None is debug.traced(
+            2,
             f"[{id(self)}] EXIT {self.__class__.__name__} refs:{self.__refs} "
             f"inst:{len(list(self.meta_path))} sys:{len(sys.meta_path)} "
         )
 
-    def lazy(self, name: str, path: list[str] | None = None, target: ModuleType | None = None) -> ModuleType:
-        pop = False
-
-        if self not in self.__stack__:
-            self.__stack__.append(self)
-            pop = True
-
-        try:
-            if (spec := self.find_spec(name, path, target)) is not None:
-                module = module_from_spec(spec)
-                spec.loader.exec_module(module)
-                return module
-
-        finally:
-            if pop:
-                pop = self.__stack__.pop()
-                assert pop is self, (pop, self)
+    def lazy(self, name: str, package: str | None = None) -> ModuleType:
+        with self:
+            return import_module(name, package)
 
     def find_spec(self, name: str, path: list[str] | None = None, target: ModuleType | None = None) -> Spec | None:
         assert self in self.__stack__, (self, self.__stack__)
@@ -117,7 +109,7 @@ class Finder(MetaPathFinder):
                 spec.target = target
             return spec
 
-        if (spec := self._find_spec(name, path)) is not None:
+        if (spec := self._find_spec(name, path, target)) is not None:
 
             if not isinstance(spec, self.Spec):
                 spec = self.specs[name] = self.Spec(self, spec, path, target)
@@ -131,14 +123,14 @@ class Finder(MetaPathFinder):
                 1 if (target := spec.target) is None else 0,  # NB: Alters state in assert, do not use variable later.
                 f"[{id(self)}] FIND {spec.loader_state} {spec.f_name} "
                 f"[{Path(c).suffix[1:] if (c:=spec.cached) else Path(o).suffix[1:] if (o:=spec.origin) else '-'}] "
-                f"[{id(target) if target is not None else '-'}]"
+                f"[{id(target) if target is not None else '-'}] {'S' if spec.stdlib else ''}{'B' if spec.builtin else ''} "
             )
 
             return spec
 
-    def _find_spec(self, name: str, path: list[str] | None = None) -> ModuleSpec | None:
+    def _find_spec(self, name: str, path: list[str] | None, target: ModuleType | None) -> ModuleSpec | None:
         for finder in (_ for _ in sys.meta_path if _ is not self):
-            if (spec := finder.find_spec(name, path)) is not None:
+            if (spec := finder.find_spec(name, path, target)) is not None:
                 return spec
 
     def invalidate_caches(self) -> None:
