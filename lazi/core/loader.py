@@ -23,6 +23,7 @@ Module = ForwardRef("Module")
 
 
 class Loader(_Loader):
+    spec: Spec
     loader: _Loader
     __busy: bool = False
     __forc: bool = False
@@ -37,10 +38,12 @@ class Loader(_Loader):
         DEAD = 5
 
     def __init__(self, spec: Spec):
+        self.spec = spec
         self.loader = spec.loader
         spec.loader_state = Loader.State.INIT
 
-    def create_module(self, spec: Spec):
+    def create_module(self, spec: Spec | None = None):
+        spec = spec if spec is not None else self.spec
         assert spec.loader is self, (spec.loader, self)
 
         if self.__busy:
@@ -66,9 +69,10 @@ class Loader(_Loader):
             self.__busy = False
 
     def exec_module(self, module: Module, spec: Spec | None = None, force: bool | None = None, /):
-        spec = spec if spec is not None else module.__spec__
+        spec = spec if spec is not None else self.spec
         lazy = not (force if force is not None else self.__forc)
 
+        assert spec is module.__spec__, (spec, module.__spec__)
         assert spec.loader is self, (spec.loader, self)
 
         name = spec.name
@@ -135,12 +139,18 @@ class Loader(_Loader):
         # if nexts is Loader.State.LOAD and spec.target is not None:
         #     modules[name] = spec.target
 
-    def invalidate_caches(self, spec: Spec) -> ModuleType | None:
+    def invalidate_caches(self, spec: Spec | None = None) -> ModuleType | None:
+        spec = spec if spec is not None else self.spec
         name_ = f"[{parent}.]{spec.name}" if (parent := spec.parent) and parent != spec.name else spec.name
         module = modules.pop(spec.name, None)
         assert None is debug.traced(
             2, f"[{id(module) if module else 'not-in-modules!'}] "
                f"{spec.loader_state} DEAD [{id(spec.target) if spec.target else ' '*15}] {name_}"
         )
+
+        spec.loader = self.loader
         spec.loader_state = Loader.State.DEAD
-        return spec.target
+        target = spec.target
+        spec.target = None
+
+        return target
