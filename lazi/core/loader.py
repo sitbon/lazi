@@ -89,18 +89,14 @@ class Loader(_Loader):
             return
 
         try:
-            if isinstance(self.loader, type(self)):
-                self.loader.exec_module(module, spec, force)
-            else:
-                self.loader.exec_module(spec.target)
-
+            self.loader.exec_module(module)
             state = nexts
             spec.loader_state = nexts = Loader.State.LOAD
 
             assert None is debug.traced(
                 1,  # if nexts is Loader.State.LOAD else 2,
                 f"[{id(module)}] {state} {name}:{nexts} [{id(spec.target)}] "
-                f"{'++++ ' if nexts is Loader.State.LOAD else ''}"
+                f"{'++++ ' if nexts is Loader.State.LOAD else ':)'}"
             )
 
         except Exception as e:
