@@ -1,3 +1,9 @@
+"""Lazy import loader.
+
+Various methods have been tried here. During investigation of PEP 302,
+ this awesome discussion was found:
+    https://softwareengineering.stackexchange.com/questions/154247/experience-of-pythons-pep-302-new-import-hooks?newreg=40439eb1fac24c8dbe6baf72af975d57
+"""
 from __future__ import annotations
 
 from sys import modules
@@ -49,8 +55,10 @@ class Loader(_Loader):
 
             spec.loader_state = Loader.State.CREA
 
-            if conf.FORCE_LOAD_MODULE:
+            if conf.FORCE_LOAD_MODULE:  # or spec.path is None:  # Consider whether spec is a package?
                 self.__forc = True
+
+            modules[spec.name] = target
 
             return target
 
@@ -72,35 +80,43 @@ class Loader(_Loader):
         if (mod := modules.get(name)) is not module:
             assert None is debug.trace(
                 f"[{id(module)}] {state} {name}:{nexts} "
-                f"[{id(spec.target)}]::[{id(mod) if mod is not spec.target else 'same' if mod is not None else '-'}] "
+                f"[{id(spec.target)}]::"
+                f"[{id(mod) if mod is not None and mod is not spec.target else 'same' if mod is not None else '-'}] "
                 "(before)"
             )
-            spec.target = mod
+
+            if mod is not None:
+                spec.target = mod
+
             modules[name] = module
 
         assert None is debug.traced(
             1,  # if nexts is Loader.State.EXEC else 2,
-            f"[{id(module)}] {state} {name}:{nexts} [{id(spec.target)}] "
-            f"{'>>> ' if nexts is Loader.State.EXEC and not lazy else ''}{'(std)' if spec.stdlib else ''}"
+            f"[{id(module)}] {state} {name}:{nexts} [{id(spec.target) if spec.target is not None else '-'}] "
+            f"{'>>>> ' if nexts is Loader.State.EXEC else '.... '}{'(std)' if spec.stdlib else ''}"
         )
 
-        if state < Loader.State.EXEC:
+        if nexts < Loader.State.EXEC:
             spec.loader_state = nexts
             return
 
         try:
-            self.loader.exec_module(module)
+            spec.loader_state = state = nexts
+
+            self.loader.exec_module(spec.target if spec.target is not None else module)
+
             state = nexts
             spec.loader_state = nexts = Loader.State.LOAD
 
             assert None is debug.traced(
                 1,  # if nexts is Loader.State.LOAD else 2,
                 f"[{id(module)}] {state} {name}:{nexts} [{id(spec.target)}] "
-                f"{'++++ ' if nexts is Loader.State.LOAD else ':)'}"
+                f"{'++++ ' if nexts is Loader.State.LOAD else '?!?! '}"
             )
 
+
+
         except Exception as e:
-            state = nexts
             spec.loader_state = nexts = Loader.State.DEAD
             assert None is debug.traced(
                 -1, f"[{id(module)}] {state} {name}:{nexts} [{id(spec.target)}] !!!! {type(e).__name__}: {e}"
@@ -123,7 +139,7 @@ class Loader(_Loader):
         module = modules.pop(spec.name, None)
         assert None is debug.traced(
             2, f"[{id(module) if module else 'not-in-modules!'}] "
-               f"{spec.loader_state} {spec.name}:DEAD [{id(spec.target)}]"
+               f"{spec.loader_state} {spec.name}:DEAD [{id(spec.target) if spec.target else '-'}]"
         )
         spec.loader_state = Loader.State.DEAD
         return spec.target

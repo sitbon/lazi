@@ -1,3 +1,11 @@
+"""MetaPathFinder implementation for lazy loading modules.
+
+Inspirations:
+- https://github.com/facebookincubator/cinder/blob/cinder/3.8/CinderDoc/lazy_imports.rst
+- https://snarky.ca/lazy-importing-in-python-3-7/
+- https://pypi.org/project/demandimport/
+- https://github.com/facebookincubator/cinder (CPython implementation)
+"""
 from __future__ import annotations
 
 import gc

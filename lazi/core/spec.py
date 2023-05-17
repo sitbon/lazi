@@ -1,3 +1,7 @@
+"""ModuleSpec wrapper class.
+
+https://peps.python.org/pep-0451/
+"""
 from __future__ import annotations
 
 from types import ModuleType
