@@ -28,11 +28,11 @@ log = logging.debug
 
 @contextmanager
 def track(msg: str):
-    log(f">>> {msg} ...")
+    log(f"... {msg} ...")
     try:
         yield
     except Exception as e:
-        log(_log := f"!!! {msg} >>> {type(e).__name__}: {e}")
+        log(_log := f"!!! {msg} !!! {type(e).__name__}: {e}")
         raise
     else:
         log(f"^^^ {msg} ^^^")

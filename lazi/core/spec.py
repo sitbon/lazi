@@ -23,8 +23,8 @@ class Spec(ModuleSpec):
     path: list[str] | None
     target: ModuleType | None
 
-    stdlib: bool = property(lambda self: not self.builtin and Path(self.origin).is_relative_to(STDLIB_PATH))
-    builtin: bool = property(lambda self: self.origin in (None, "built-in"))
+    stdlib: bool = property(lambda self: self.origin and Path(self.origin).is_relative_to(STDLIB_PATH))
+    builtin: bool = property(lambda self: self.origin == "built-in")
 
     def __init__(self, finder: Finder, spec: ModuleSpec, path: list[str] | None = None, target: ModuleType | None = None):
         self.finder = finder
