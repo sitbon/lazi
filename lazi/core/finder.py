@@ -102,7 +102,7 @@ class Finder(MetaPathFinder):
         if self.__busy or self.__stack__[-1] != self:
             return None
 
-        assert None is debug.traced(2, f"[{id(self)}] SPEC {name}:FIND [{len(path) if path is not None else '*'}]")
+        assert None is debug.traced(2, f"[{id(self)}] SPEC FIND {name} [{len(path) if path is not None else '*'}]")
 
         if (spec := self.specs.get(name)) is not None:
             assert spec.finder is self, (spec.finder, self)
@@ -113,20 +113,12 @@ class Finder(MetaPathFinder):
         try:
             if (spec := find_spec(name, path)) is not None:
 
-                # if spec.loader is None:
-                #     # This is a namespace package, don't bother with it.
-                #     return spec
-
                 spec = self.specs[name] = self.Spec(self, spec, path, target)
 
                 assert None is debug.traced(
-                    1, f"[{id(self)}] FIND {spec.name}:{spec.loader_state} "
-                       f"[{len(spec.path) if path is not None else '*'}] "
-                       f"{Path(spec.origin).suffix[1:] if spec.origin is not None else '.'}")
-
-                # if conf.FORCE_LOAD_MODULE and (module := sys.modules.get(spec.name)):
-                #     # I think this is flawed because it's still too early to load the module.
-                #     spec.loader.exec_module(module, spec, True)
+                    1, f"[{id(self)}] FIND {spec.loader_state} {spec.f_name} "
+                       f"[{Path(c).suffix[1:] if (c:=spec.cached) is not None else Path(o).suffix[1:] if (o:=spec.origin) is not None else '.'}]"
+                )
 
                 return spec
         finally:
@@ -135,8 +127,8 @@ class Finder(MetaPathFinder):
     def invalidate_caches(self) -> None:
         if not conf.SOFT_INVALIDATION:
             while self.specs and (spec := self.specs.popitem()[1]):
-                if hasattr(spec.loader, "unload_module"):
-                    spec.loader.unload_module(spec)
+                if hasattr(spec.loader, "invalidate_caches"):
+                    spec.loader.invalidate_caches(spec)
         else:
             self.specs.clear()
 

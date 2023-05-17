@@ -24,15 +24,21 @@ STDLIB_PATH = Path(sysconfig.get_path("stdlib"))  # Preload sysconfig data.
 class Spec(ModuleSpec):
     finder: Finder
     loader: Loader
-    path: list[str] | None
+    s_path: list[str] | None
     target: ModuleType | None
 
     stdlib: bool = property(lambda self: self.origin and Path(self.origin).is_relative_to(STDLIB_PATH))
     builtin: bool = property(lambda self: self.origin == "built-in")
 
+    _f_name = lambda self, wrap=lambda _, __: f"[{_}.]{__}": (
+        wrap(parent, name) if (name := self.name) != (parent := self.parent) and parent else name
+    )
+
+    f_name: str | None = property(lambda self: self._f_name())
+
     def __init__(self, finder: Finder, spec: ModuleSpec, path: list[str] | None = None, target: ModuleType | None = None):
         self.finder = finder
-        self.path = path
+        self.s_path = path
         self.target = target
 
         super().__init__(
@@ -44,7 +50,6 @@ class Spec(ModuleSpec):
         )
 
         self.__dict__.update(spec.__dict__)
-
         self.loader = finder.Loader(self) if self.hook else self.loader
 
     @property

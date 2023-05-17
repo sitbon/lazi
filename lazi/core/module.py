@@ -50,7 +50,7 @@ class Module(ModuleType):
     def __getattribute__(self, attr):
         spec = super().__getattribute__("__spec__")
 
-        assert None is debug.traced(3, f"[{id(self)}] {spec.loader_state} {spec.name}[.{attr}] *")
+        assert None is debug.traced(3, f"[{id(self)}] {spec.loader_state} **** [{id(spec.target or self)}] {spec.f_name}[.{attr}]")
 
         if attr in GETATTR_PASS and (index := GETATTR_PASS.index(attr)) >= 0:
             return spec if not index else spec.target.__getattribute__(attr)
@@ -59,7 +59,7 @@ class Module(ModuleType):
             return spec.target.__getattribute__(attr)
 
         if spec.loader_state.value <= spec.loader.State.LAZY.value:
-            assert None is debug.trace(f"[{id(self)}] {spec.loader_state} {spec.name}[.{attr}] +")
+            assert None is debug.trace(f"[{id(self)}] {spec.loader_state} >>>> [{id(spec.target or self)}] {spec.f_name}[.{attr}]")
             spec.loader.exec_module(self, spec, True)
 
         return spec.target.__getattribute__(attr)
@@ -73,6 +73,6 @@ class Module(ModuleType):
         spec.target.__setattr__(attr, valu)
 
         if attr not in SETATTR_PASS and spec.loader_state.value <= spec.loader.State.LAZY.value:
-            assert None is debug.trace(f"[{id(self)}] {spec.loader_state} {spec.name}[.{attr}] = [{id(valu)}] +")
+            assert None is debug.trace(f"[{id(self)}] {spec.loader_state} <<<< [{id(spec.target or self)}] {spec.f_name}[.{attr}] = [{id(valu)}]")
             spec.loader.exec_module(self, spec, True)
 
