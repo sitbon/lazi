@@ -7,6 +7,7 @@ from enum import Enum
 from importlib.abc import Loader as _Loader
 from importlib.util import module_from_spec
 
+from lazi.conf import conf
 from lazi.util import debug
 
 __all__ = "Loader",
@@ -63,41 +64,57 @@ class Loader(_Loader):
 
         name = spec.name
         state = spec.loader_state
-        nexts = spec.loader_state = self.State.EXEC if force else self.State.LAZY
 
         assert state in (self.State.INIT, self.State.CREA, self.State.LAZY), state
 
-        if name not in modules:
-            assert None is debug.trace(f"[{id(module)}] {state} {name}:{nexts} missing-in-sys-modules-before")
+        if not force and conf.NO_STDLIB_LAZLOAD and spec.stdlib:
+            force = True
+
+        nexts = spec.loader_state = self.State.EXEC if force else self.State.LAZY
+
+        if (mod := modules.get(name)) is None:
+            assert None is debug.trace(f"[{id(module)}] {state} {name}:{nexts} [{id(spec.target)}]->[self] (before)")
             modules[name] = module
 
-        elif modules[name] is not module:
+        elif mod is not module:
             assert None is debug.trace(
-                f"[{id(module)}] {state} {name}:{nexts} replaced-in-sys-modules-before "
-                f"by:{id(modules[name])}"
+                f"[{id(module)}] {state} {name}:{nexts} [{id(spec.target)}]->[{id(mod)}] (before)"
             )
-            spec.target = modules[name]
+            spec.target = mod
             modules[name] = module
 
-        assert None is debug.traced(1, f"[{id(module)}] {state} {name}:{nexts} std:{int(spec.stdlib)}")
+        assert None is debug.traced(
+            1, f"[{id(module)}] {state} {name}:{nexts} [{id(spec.target)}] "
+               f"{'>>>>' if nexts is self.State.EXEC else ''} {'(std)' if spec.stdlib else ''}"
+        )
 
         if nexts is self.State.EXEC:
-            self.loader.exec_module(spec.target, spec, force) if isinstance(self.loader, type(self)) else \
-                self.loader.exec_module(spec.target)
-            state = nexts
-            nexts = spec.loader_state = self.State.LOAD
-            assert None is debug.traced(2, f"[{id(module)}] {state} {name}:{nexts}")
+            try:
+                (self.loader.exec_module(spec.target, spec, force)
+                    if isinstance(self.loader, type(self)) else
+                    self.loader.exec_module(spec.target))
 
-        if name not in modules:
-            assert None is debug.trace(f"[{id(module)}] {state} {name}:{nexts} deleted-from-sys-modules-after")
-            # TODO: del spec.target?
+                state = nexts
+                nexts = spec.loader_state = self.State.LOAD
 
-        elif modules[name] is not spec.target and modules[name] is not module:
+            except Exception as e:
+                assert None is debug.trace(
+                    f"[{id(module)}] {state} {name}:{nexts} [{id(spec.target)}] !!!! {type(e).__name__}: {e}"
+                )
+                raise
+            else:
+                assert None is debug.traced(1, f"[{id(module)}] {state} {name}:{nexts} [{id(spec.target)}] ++++ ")
+
+        if (mod := modules.get(name)) is None:
+            assert None is debug.trace(f"[{id(module)}] {state} {name}:{nexts} [{id(spec.target)}]->[None] (after)")
+            # TODO: del spec.target? Or set modules[name] = module?
+
+        elif mod is not module:
             assert None is debug.trace(
-                f"[{id(module)}] {state} {name}:{nexts} replaced-in-sys-modules-after "
-                f"by:{id(modules[name])}"
+                f"[{id(module)}] {state} {name}:{nexts} [{id(spec.target)}]->[{id(mod)}] (after)"
             )
-            spec.target = modules[name]
+            spec.target = mod
+            modules[name] = module
 
         # if nexts is self.State.LOAD and spec.target is not None:
         #     modules[name] = spec.target
@@ -105,8 +122,7 @@ class Loader(_Loader):
     def unload_module(self, spec: Spec) -> ModuleType | None:
         module = modules.pop(spec.name, None)
         assert None is debug.traced(
-            2,
-            f"[{id(module) if module else None}] {spec.loader_state} {spec.name}:DEAD t:{id(spec.target)}"
+            2, f"[{id(module) if module else None}] {spec.loader_state} {spec.name}:DEAD t:{id(spec.target)}"
         )
         spec.loader_state = self.State.DEAD
         return spec.target

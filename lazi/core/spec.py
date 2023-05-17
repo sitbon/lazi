@@ -47,5 +47,5 @@ class Spec(ModuleSpec):
     def hook(self) -> bool:
         return not conf.DISABLE_LOAD_HOOK and (
             not self.builtin and
-            (not self.stdlib or not conf.NO_STDLIB_MODULES)
+            (not self.stdlib or not conf.NO_STDLIB_HOOKING)
         )

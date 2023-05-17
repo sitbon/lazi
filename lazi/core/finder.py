@@ -90,11 +90,7 @@ class Finder(MetaPathFinder):
         if self.__busy or self.__stack__[-1] != self:
             return None
 
-        assert None is debug.traced(
-            1,
-            f"[{id(self)}] FIND {name} p:{len(path) if path else path!r} t:{target!r} "
-            f"stack:{len(self.__stack__)}"
-        )
+        assert None is debug.traced(1, f"[{id(self)}] FIND {name}")
 
         if (spec := self.specs.get(name)) is not None:
             assert spec.finder is self, (spec.finder, self)
