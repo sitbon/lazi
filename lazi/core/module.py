@@ -91,5 +91,5 @@ class Module(ModuleType):
                 f"[{id(self)}] {spec.loader_state} <<<< [{id(spec.target or self)}] "
                 f"{spec.f_name}[.{attr}] = [{id(valu)}] {'+' if not has else ''}"
             )
-            spec.loader.exec_module(self, spec, True)
-            # spec.target.__setattr__(attr, valu)  # ?
+            # spec.loader.exec_module(self, spec, True)
+            # # spec.target.__setattr__(attr, valu)  # ?
