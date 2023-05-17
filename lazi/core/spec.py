@@ -27,7 +27,7 @@ class Spec(ModuleSpec):
     s_path: list[str] | None
     target: ModuleType | None
 
-    stdlib: bool = property(lambda self: self.origin and Path(self.origin).is_relative_to(STDLIB_PATH))
+    stdlib: bool = property(lambda self: self.origin and STDLIB_PATH in Path(self.origin).parents)
     builtin: bool = property(lambda self: self.origin == "built-in")
 
     _f_name = lambda self, wrap=lambda _, __: f"[{_}.]{__}": (
