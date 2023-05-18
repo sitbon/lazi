@@ -22,7 +22,6 @@ Module = ForwardRef("Module")
 
 NO_LAZY = conf.NO_LAZY
 TRACE = conf.TRACE
-TRACEE = conf.TRACEE
 
 
 class Loader(_Loader):
@@ -39,6 +38,9 @@ class Loader(_Loader):
         EXEC = 3
         LOAD = 4
         DEAD = 5
+
+    class Error(ImportError):
+        pass
 
     def __init__(self, spec: Spec):
         self.spec = spec
@@ -124,14 +126,15 @@ class Loader(_Loader):
 
         except Exception as e:
             spec.loader_state = nexts = Loader.State.DEAD
-            assert None is getattr(
-                debug,
-                "exception" if not isinstance(e, ImportError) and (TRACEE or TRACE > 0) else
-                "trace" if not TRACEE else "info"
-            )(
-                f"[{oid(module)}] {state} {nexts} [{oid(target) if target is not None else '*'*15}] {name_} !!!! " +
-                (('\n' + " " * 18 + f"!!!! {type(e).__name__}: {e}") if not isinstance(e, ImportError) else e.name)
+            assert None is debug.trace(
+                msg :=
+                f"[{oid(module)}] {state} {nexts} [{oid(target) if target is not None else '*'*15}] {name_} !!!! "
+                f"{type(e).__name__ if not isinstance(e, Loader.Error) else ''}"
             )
+
+            if not isinstance(e, Loader.Error):
+                raise Loader.Error(f"Error loading {name_}" if not __debug__ else msg) from e
+
             raise
 
         if (mod := modules.get(name)) is not module:

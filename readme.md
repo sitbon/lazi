@@ -105,18 +105,14 @@ Or:
 
 This is the most common issue when using `lazi.auto`, and can be difficult to debug.
 
-Fortunately, Lazi will show some useful tracebacks including the original exception before
-it was transformed into an `ImportError` (by CPython, thowing away the original traceback).
+Fortunately, Lazi wraps the original exception before it poetentially gets transformed into an `ImportError`.
 
-Example (with `TRACE=0` and `TRACEE=1`):
+Example (with `TRACE=0`):
 ```pycon
 >>> import lazi.auto
 >>> import pandas.core.nanops
-[7FABA3D89300] EXEC DEAD [7FABA3D89350] dateutil.tz|win !!!! six.moves  # This is an unrelated error that a module handled.
-[7FABA30D6B10] EXEC DEAD [7FABA30D5B70] pandas.core|nanops !!!! 
-                  !!!! OptionError: No such keys(s): 'compute.use_bottleneck'
 Traceback (most recent call last):
-  File "/home/jq/pr/lazi/lazi/core/loader.py", line 113, in exec_module
+  File "/home/jq/pr/lazi/lazi/core/loader.py", line 115, in exec_module
     self.loader.exec_module(target if target is not None else module)
   File "<frozen importlib._bootstrap_external>", line 940, in exec_module
   File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
@@ -132,51 +128,52 @@ Traceback (most recent call last):
   File "<site-packages>/pandas/_config/config.py", line 121, in _get_single_key
     raise OptionError(f"No such keys(s): {repr(pat)}")
 pandas._config.config.OptionError: No such keys(s): 'compute.use_bottleneck'
-[7FABA2FCAE30] EXEC DEAD [7FABA2FCAED0] pandas.core.arrays.sparse|array !!!! pandas.core.nanops
-[7FABA2FCA480] EXEC DEAD [7FABA2FCA570] pandas.core.arrays.sparse|accessor !!!! pandas.core.nanops
-[7FABA2FCA390] EXEC DEAD [7FABA2FCA2A0] pandas.core.arrays.sparse !!!! pandas.core.nanops
-[7FABA3395440] EXEC DEAD [7FABA33953F0] pandas.core.arrays !!!! pandas.core.nanops # These lines without tracebacks
-[7FABA3342250] EXEC DEAD [7FABA33422A0] pandas.core|api !!!! pandas.core.nanops    #  are ImportErrors passed up
-[7FABF4F4D8A0] EXEC DEAD [7FABF4F4CE00] pandas !!!! pandas.core.nanops             #  in the load stack.
+
+The above exception was the direct cause of the following exception:
+
 Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
   File "/home/jq/pr/lazi/lazi/core/module.py", line 102, in __setattr__
     spec.loader.exec_module(self, True)
-  File "/home/jq/pr/lazi/lazi/core/loader.py", line 113, in exec_module
+  File "/home/jq/pr/lazi/lazi/core/loader.py", line 115, in exec_module
     self.loader.exec_module(target if target is not None else module)
   File "<site-packages>/pandas/__init__.py", line 48, in <module>
     from pandas.core.api import (
   File "/home/jq/pr/lazi/lazi/core/module.py", line 75, in __getattribute__
     spec.loader.exec_module(self, True)
-  File "/home/jq/pr/lazi/lazi/core/loader.py", line 113, in exec_module
+  File "/home/jq/pr/lazi/lazi/core/loader.py", line 115, in exec_module
     self.loader.exec_module(target if target is not None else module)
   File "<site-packages>/pandas/core/api.py", line 27, in <module>
     from pandas.core.arrays import Categorical
   File "/home/jq/pr/lazi/lazi/core/module.py", line 75, in __getattribute__
     spec.loader.exec_module(self, True)
-  File "/home/jq/pr/lazi/lazi/core/loader.py", line 113, in exec_module
+  File "/home/jq/pr/lazi/lazi/core/loader.py", line 115, in exec_module
     self.loader.exec_module(target if target is not None else module)
   File "<site-packages>/pandas/core/arrays/__init__.py", line 19, in <module>
     from pandas.core.arrays.sparse import SparseArray
   File "/home/jq/pr/lazi/lazi/core/module.py", line 75, in __getattribute__
     spec.loader.exec_module(self, True)
-  File "/home/jq/pr/lazi/lazi/core/loader.py", line 113, in exec_module
+  File "/home/jq/pr/lazi/lazi/core/loader.py", line 115, in exec_module
     self.loader.exec_module(target if target is not None else module)
   File "<site-packages>/pandas/core/arrays/sparse/__init__.py", line 1, in <module>
     from pandas.core.arrays.sparse.accessor import (
   File "/home/jq/pr/lazi/lazi/core/module.py", line 75, in __getattribute__
     spec.loader.exec_module(self, True)
-  File "/home/jq/pr/lazi/lazi/core/loader.py", line 113, in exec_module
+  File "/home/jq/pr/lazi/lazi/core/loader.py", line 115, in exec_module
     self.loader.exec_module(target if target is not None else module)
   File "<site-packages>/pandas/core/arrays/sparse/accessor.py", line 16, in <module>
     from pandas.core.arrays.sparse.array import SparseArray
   File "/home/jq/pr/lazi/lazi/core/module.py", line 75, in __getattribute__
     spec.loader.exec_module(self, True)
-  File "/home/jq/pr/lazi/lazi/core/loader.py", line 113, in exec_module
+  File "/home/jq/pr/lazi/lazi/core/loader.py", line 115, in exec_module
     self.loader.exec_module(target if target is not None else module)
   File "<site-packages>/pandas/core/arrays/sparse/array.py", line 101, in <module>
     from pandas.core.nanops import check_below_min_count
-ImportError: cannot import name 'check_below_min_count' from 'pandas.core.nanops' (unknown location)
+  File "/home/jq/pr/lazi/lazi/core/module.py", line 75, in __getattribute__
+    spec.loader.exec_module(self, True)
+  File "/home/jq/pr/lazi/lazi/core/loader.py", line 136, in exec_module
+    raise Loader.Error(f"Error loading {name_}" if not __debug__ else msg) from e
+lazi.core.loader.Loader.Error: [7F899C139260] EXEC DEAD [7F899C1382C0] pandas.core|nanops !!!! OptionError
 >>> _
 ```
 

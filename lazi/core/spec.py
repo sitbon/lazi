@@ -43,6 +43,8 @@ class Spec(ModuleSpec):
     is_package: bool = cached_property(lambda self: self.submodule_search_locations is not None)
 
     def __init__(self, finder: Finder, spec: ModuleSpec, path: list[str] | None = None, target: ModuleType | None = None):
+        assert spec.loader is not None, "ModuleSpec.loader is None"
+
         self.finder = finder
         self.s_path = path
         self.target = target
