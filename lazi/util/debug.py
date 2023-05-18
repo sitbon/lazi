@@ -5,13 +5,11 @@ from lazi.conf import conf
 
 __all__ = "trace", "traced", "info", "track"
 
-
-info = logging.info
 exception = logging.exception
 
 TRACE = conf.TRACE
 
-if __debug__ and TRACE:
+if __debug__:
 
     logging.basicConfig(
         level=logging.DEBUG,
@@ -20,10 +18,12 @@ if __debug__ and TRACE:
 
     traced = lambda at, /, *args, **kwds: logging.debug(*args, **kwds) if TRACE > at else None  # noqa
     trace = lambda *args, **kwds: traced(0, *args, **kwds)
+    info = lambda *_, **__: traced(-1, *_, **__)
 
 else:
     traced = lambda at, /, *args, **kwds: None
     trace = lambda *args, **kwds: None
+    info = lambda *_, **__: None
 
 
 @contextmanager
