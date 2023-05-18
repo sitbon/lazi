@@ -98,6 +98,89 @@ Or:
 >>> _
 ```
 
+### Tricky Situations.
+
+#### 1. Circular imports.
+
+Usually shows up as `AttributeError: 'module' object has no attribute 'attr'`.
+
+#### 2. Expected global state is not there.
+
+This is the most common issue when using `lazi.auto`, and can be difficult to debug.
+
+Fortunately, Lazi will show some useful tracebacks including the original exception before
+it was transformed into an `ImportError` or `AttributeError` (by CPython, thowing away the original traceback).
+
+Example:
+```pycon
+>>> import lazi.auto
+>>> import pandas.core.nanops
+ERROR:root:[140549280569824] EXEC DEAD [140549280573824] pandas.core|nanops
+                  !!!! OptionError: No such keys(s): 'compute.use_bottleneck'
+Traceback (most recent call last):
+  File "/home/jq/pr/lazi/lazi/core/loader.py", line 107, in exec_module
+    self.loader.exec_module(target if target is not None else module)
+  File "<frozen importlib._bootstrap_external>", line 940, in exec_module
+  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+  File "/home/jq/.cache/pypoetry/virtualenvs/lazi-5AqQzycq-py3.11/lib/python3.11/site-packages/pandas/core/nanops.py", line 74, in <module>
+    set_use_bottleneck(get_option("compute.use_bottleneck"))
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jq/.cache/pypoetry/virtualenvs/lazi-5AqQzycq-py3.11/lib/python3.11/site-packages/pandas/_config/config.py", line 261, in __call__
+    return self.__func__(*args, **kwds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jq/.cache/pypoetry/virtualenvs/lazi-5AqQzycq-py3.11/lib/python3.11/site-packages/pandas/_config/config.py", line 135, in _get_option
+    key = _get_single_key(pat, silent)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jq/.cache/pypoetry/virtualenvs/lazi-5AqQzycq-py3.11/lib/python3.11/site-packages/pandas/_config/config.py", line 121, in _get_single_key
+    raise OptionError(f"No such keys(s): {repr(pat)}")
+pandas._config.config.OptionError: No such keys(s): 'compute.use_bottleneck'
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+  File "/home/jq/pr/lazi/lazi/core/module.py", line 102, in __setattr__
+    spec.loader.exec_module(self, True)
+  File "/home/jq/pr/lazi/lazi/core/loader.py", line 107, in exec_module
+    self.loader.exec_module(target if target is not None else module)
+  File "/home/jq/.cache/pypoetry/virtualenvs/lazi-5AqQzycq-py3.11/lib/python3.11/site-packages/pandas/__init__.py", line 48, in <module>
+    from pandas.core.api import (
+  File "/home/jq/pr/lazi/lazi/core/module.py", line 75, in __getattribute__
+    spec.loader.exec_module(self, True)
+  File "/home/jq/pr/lazi/lazi/core/loader.py", line 107, in exec_module
+    self.loader.exec_module(target if target is not None else module)
+  File "/home/jq/.cache/pypoetry/virtualenvs/lazi-5AqQzycq-py3.11/lib/python3.11/site-packages/pandas/core/api.py", line 27, in <module>
+    from pandas.core.arrays import Categorical
+  File "/home/jq/pr/lazi/lazi/core/module.py", line 75, in __getattribute__
+    spec.loader.exec_module(self, True)
+  File "/home/jq/pr/lazi/lazi/core/loader.py", line 107, in exec_module
+    self.loader.exec_module(target if target is not None else module)
+  File "/home/jq/.cache/pypoetry/virtualenvs/lazi-5AqQzycq-py3.11/lib/python3.11/site-packages/pandas/core/arrays/__init__.py", line 19, in <module>
+    from pandas.core.arrays.sparse import SparseArray
+  File "/home/jq/pr/lazi/lazi/core/module.py", line 75, in __getattribute__
+    spec.loader.exec_module(self, True)
+  File "/home/jq/pr/lazi/lazi/core/loader.py", line 107, in exec_module
+    self.loader.exec_module(target if target is not None else module)
+  File "/home/jq/.cache/pypoetry/virtualenvs/lazi-5AqQzycq-py3.11/lib/python3.11/site-packages/pandas/core/arrays/sparse/__init__.py", line 1, in <module>
+    from pandas.core.arrays.sparse.accessor import (
+  File "/home/jq/pr/lazi/lazi/core/module.py", line 75, in __getattribute__
+    spec.loader.exec_module(self, True)
+  File "/home/jq/pr/lazi/lazi/core/loader.py", line 107, in exec_module
+    self.loader.exec_module(target if target is not None else module)
+  File "/home/jq/.cache/pypoetry/virtualenvs/lazi-5AqQzycq-py3.11/lib/python3.11/site-packages/pandas/core/arrays/sparse/accessor.py", line 16, in <module>
+    from pandas.core.arrays.sparse.array import SparseArray
+  File "/home/jq/pr/lazi/lazi/core/module.py", line 75, in __getattribute__
+    spec.loader.exec_module(self, True)
+  File "/home/jq/pr/lazi/lazi/core/loader.py", line 107, in exec_module
+    self.loader.exec_module(target if target is not None else module)
+  File "/home/jq/.cache/pypoetry/virtualenvs/lazi-5AqQzycq-py3.11/lib/python3.11/site-packages/pandas/core/arrays/sparse/array.py", line 101, in <module>
+    from pandas.core.nanops import check_below_min_count
+ImportError: cannot import name 'check_below_min_count' from 'pandas.core.nanops' (unknown location)
+>>> _
+```
+
+_Unforunately_... This isn't something that can be worked around without outer dependency tracking, which
+generally results in entire packages getting loaded anyway.
+
+If you're more interested in just tracking imports with Lazi, use the `NO_HOOK` config variable (see below).
+
 ## Configuration
 
 The `lazi.conf` namespace package contains configuration modules

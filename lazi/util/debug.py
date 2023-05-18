@@ -27,12 +27,12 @@ else:
 
 
 @contextmanager
-def track(msg: str, log=info):
+def track(msg: str, log=info, exc=info):
     log(f"... {msg} ...")
     try:
         yield
     except Exception as e:
-        exception(_log := f"!!! {msg} !!! {type(e).__name__}: {e}")
+        exc(_log := f"!!! {msg} !!! {type(e).__name__}: {e}")
         raise
     else:
         log(f"^^^ {msg} ^^^")

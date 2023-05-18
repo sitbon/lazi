@@ -118,8 +118,7 @@ class Loader(_Loader):
 
         except Exception as e:
             spec.loader_state = nexts = Loader.State.DEAD
-            assert None is debug.traced(
-                0 if not isinstance(e, ImportError) else 1,
+            assert None is getattr(debug, "info" if isinstance(e, ImportError) else "exception")(
                 f"[{id(module)}] {state} {nexts} [{id(target) if target is not None else '*'*15}] {name_}\n" +
                 " " * 18 + f"!!!! {type(e).__name__}: {e}"
             )
@@ -134,9 +133,6 @@ class Loader(_Loader):
 
             spec.target = target = mod
             modules[name] = module
-
-        # if nexts is Loader.State.LOAD and target is not None:
-        #     modules[name] = target
 
     def invalidate_caches(self) -> None:
         spec = self.spec
