@@ -122,10 +122,11 @@ class Finder(MetaPathFinder):
                     spec.target = target
 
             assert None is debug.traced(
-                1 if (target := spec.target) is None else 0,  # NB: Alters state in assert, do not use variable later.
-                f"[{id(self)}] FIND {spec.loader_state} {spec.f_name} "
-                f"[{Path(c).suffix[1:] if (c:=spec.cached) else Path(o).suffix[1:] if (o:=spec.origin) else '-'}] "
-                f"[{id(target) if target is not None else '-'}] {'S' if spec.stdlib else ''}{'B' if spec.builtin else ''} "
+                1,
+                f"[{id(self)}] FIND " +
+                ((Path(c).suffix[1:] if (c := spec.cached) else Path(o).suffix[1:] if (o := spec.origin) else '?') +
+                    f"{'S' if spec.stdlib else ''}{'B' if spec.builtin else ''}").ljust(5) +
+                spec.f_name
             )
 
             return spec

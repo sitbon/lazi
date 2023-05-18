@@ -35,45 +35,45 @@ And with `TRACE=2`:
 [139659819833296] FIND INIT django [pyc] [-]  
 [139659818784768] CREA LAZY [139659821474144] django ....  # This is where the lazy module is set up.
 >>> django.VERSION
-[139659818784768] LAZY >>>> [139659821474144] django[.VERSION]
-[139659818784768] LAZY EXEC [139659821474144] django >>>> 
-[139659819833296] FIND INIT django.utils [pyc] [-]  
-[139659818783728] CREA LAZY [139659818783808] django.utils .... 
-[139659819833296] FIND INIT [django.utils.]django.utils.version [pyc] [-]  
-[139659818784448] CREA LAZY [139659818784208] [django.utils.]django.utils.version .... 
-[139659818783728] LAZY <<<< [139659818783808] django.utils[.version] = [139659818784448]
-[139659818783728] LAZY EXEC [139659818783808] django.utils >>>> 
-[139659818783728] EXEC LOAD [139659818783808] django.utils ++++  # This is where the lazy module is fully loaded. 
-[139659818784448] LAZY >>>> [139659818784208] [django.utils.]django.utils.version[.get_version]
-[139659818784448] LAZY EXEC [139659818784208] [django.utils.]django.utils.version >>>> 
-[139659819833296] FIND INIT datetime [pyc] [-] S  # "S" means it's a stdlib module.
-[139659818786048] CREA LAZY [139659818786208] datetime .... 
-[139659819833296] FIND INIT subprocess [pyc] [-] S 
-[139659818786128] CREA LAZY [139659818786448] subprocess .... 
-[139659819833296] FIND INIT [django.utils.]django.utils.regex_helper [pyc] [-]  
-[139659818786528] CREA LAZY [139659818786368] [django.utils.]django.utils.regex_helper .... 
-[139659818786528] LAZY >>>> [139659818786368] [django.utils.]django.utils.regex_helper[._lazy_re_compile]
-[139659818786528] LAZY EXEC [139659818786368] [django.utils.]django.utils.regex_helper >>>> 
-[139659819833296] FIND INIT [django.utils.]django.utils.functional [pyc] [-]  
-[139659818787488] CREA LAZY [139659818787328] [django.utils.]django.utils.functional .... 
-[139659818787488] LAZY >>>> [139659818787328] [django.utils.]django.utils.functional[.SimpleLazyObject]
-[139659818787488] LAZY EXEC [139659818787328] [django.utils.]django.utils.functional >>>> 
-[139659819833296] FIND INIT copy [pyc] [-] S 
-[139659818790368] CREA LAZY [139659818791248] copy .... 
-[139659818787488] EXEC LOAD [139659818787328] [django.utils.]django.utils.functional ++++ 
-[139659818786528] EXEC LOAD [139659818786368] [django.utils.]django.utils.regex_helper ++++ 
-[139659818784448] EXEC LOAD [139659818784208] [django.utils.]django.utils.version ++++ 
-[139659818784768] EXEC LOAD [139659821474144] django ++++ 
+[140379497174160] LAZY >>>> [140379499847872] django VERSION
+[140379497174160] LAZY EXEC [140379499847872] django >>>> 
+[140379498707216] FIND pyc  django.utils
+[140379497174640] CREA LAZY [140379497174720] django.utils .... 
+[140379498707216] FIND pyc  django.utils!version
+[140379497175200] CREA LAZY [140379497175600] django.utils|version .... 
+[140379497174640] LAZY <<<< [140379497174720] django.utils version = [140379497175200]
+[140379497174640] LAZY EXEC [140379497174720] django.utils >>>> 
+[140379497174640] EXEC LOAD [140379497174720] django.utils ++++  # This is where the lazy module is fully loaded. 
+[140379497175200] LAZY >>>> [140379497175600] django.utils|version get_version
+[140379497175200] LAZY EXEC [140379497175600] django.utils|version >>>> 
+[140379498707216] FIND pycS datetime  # "S" means it's a stdlib module.
+[140379497177040] CREA LAZY [140379497177120] datetime .... 
+[140379498707216] FIND pycS subprocess
+[140379497177280] CREA LAZY [140379497177360] subprocess .... 
+[140379498707216] FIND pyc  django.utils|regex_helper
+[140379497177200] CREA LAZY [140379497177440] django.utils|regex_helper .... 
+[140379497177200] LAZY >>>> [140379497177440] django.utils|regex_helper _lazy_re_compile
+[140379497177200] LAZY EXEC [140379497177440] django.utils|regex_helper >>>> 
+[140379498707216] FIND pyc  django.utils|functional
+[140379497178240] CREA LAZY [140379497178480] django.utils|functional .... 
+[140379497178240] LAZY >>>> [140379497178480] django.utils|functional SimpleLazyObject
+[140379497178240] LAZY EXEC [140379497178480] django.utils|functional >>>> 
+[140379498707216] FIND pycS copy
+[140379497182240] CREA LAZY [140379497183440] copy .... 
+[140379497178240] EXEC LOAD [140379497178480] django.utils|functional ++++ 
+[140379497177200] EXEC LOAD [140379497177440] django.utils|regex_helper ++++ 
+[140379497175200] EXEC LOAD [140379497175600] django.utils|version ++++ 
+[140379497174160] EXEC LOAD [140379499847872] django ++++ 
 (4, 2, 1, 'final', 0)
 >>> exit()
-[139659818790368] LAZY DEAD [139659818791248] copy
-[139659818787488] LOAD DEAD [139659818787328] [django.utils.]django.utils.functional
-[139659818786528] LOAD DEAD [139659818786368] [django.utils.]django.utils.regex_helper
-[139659818786128] LAZY DEAD [139659818786448] subprocess
-[139659818786048] LAZY DEAD [139659818786208] datetime
-[139659818784448] LOAD DEAD [139659818784208] [django.utils.]django.utils.version
-[139659818783728] LOAD DEAD [139659818783808] django.utils
-[139659818784768] LOAD DEAD [139659821474144] django
+[140379497182240] LAZY DEAD [140379497183440] copy
+[140379497178240] LOAD DEAD [140379497178480] django.utils|functional
+[140379497177200] LOAD DEAD [140379497177440] django.utils|regex_helper
+[140379497177280] LAZY DEAD [140379497177360] subprocess
+[140379497177040] LAZY DEAD [140379497177120] datetime
+[140379497175200] LOAD DEAD [140379497175600] django.utils|version
+[140379497174640] LOAD DEAD [140379497174720] django.utils
+[140379497174160] LOAD DEAD [140379499847872] django
 ```
 
 ### Use for specific modules:

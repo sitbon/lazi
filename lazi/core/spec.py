@@ -34,11 +34,11 @@ class Spec(ModuleSpec):
     stdlib: bool = cached_property(lambda self: self.origin and STDLIB_PATH in Path(self.origin).parents)
     builtin: bool = cached_property(lambda self: self.origin == "built-in")
 
-    _f_name = lambda self, wrap=lambda _, __: f"[{_}.]{__}": (
+    _f_name = lambda self, wrap=lambda _, __: f"{_}|{__.replace(f'{_}.', '', 1)}": (
         wrap(parent, name) if (name := self.name) != (parent := self.parent) and parent else name
     )
 
-    f_name: str | None = property(lambda self: self._f_name())
+    f_name: str | None = cached_property(lambda self: self._f_name())
 
     def __init__(self, finder: Finder, spec: ModuleSpec, path: list[str] | None = None, target: ModuleType | None = None):
         self.finder = finder
