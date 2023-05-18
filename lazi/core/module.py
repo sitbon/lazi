@@ -98,7 +98,7 @@ class Module(ModuleType):
                 f"{spec.f_name}[.{attr}] = [{id(valu)}]"
             )
 
-            # target.__setattr__(attr, valu)  # Preload the variable?
+            target.__setattr__(attr, valu)  # Preload the variable? Yes: Fixes stdlib (asyncio.coroutines) errors in README.md.
             spec.loader.exec_module(self, spec, True)
 
         spec.target.__setattr__(attr, valu)  # NB: Don't use `target` here, as it may have changed.
