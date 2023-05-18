@@ -25,6 +25,9 @@ from .module import Module
 
 __all__ = "Finder", "__finder__"
 
+INVAL_SOFT = conf.INVAL_SOFT
+INVAL_GC = conf.INVAL_GC
+
 
 class Finder(MetaPathFinder):
     Spec: type[Spec] = Spec
@@ -49,11 +52,9 @@ class Finder(MetaPathFinder):
         try:
             if self in self.__finders__:
                 self.__finders__.remove(self)
-
-            self.invalidate_caches()
+                self.invalidate_caches()
         except Exception as e:
-            assert None is debug.traced(
-                -1,
+            assert None is debug.log(
                 f"[{id(self)}] DEL! {self.__class__.__name__} !!!! {type(e).__name__}: {e}"
             )
 
@@ -134,14 +135,14 @@ class Finder(MetaPathFinder):
                 return spec
 
     def invalidate_caches(self) -> None:
-        if not conf.INVAL_SOFT:
+        if not INVAL_SOFT:
             while self.specs and (spec := self.specs.popitem()[1]):
                 if hasattr(spec.loader, "invalidate_caches"):
                     spec.loader.invalidate_caches(spec)
         else:
             self.specs.clear()
 
-        if conf.INVAL_GC:
+        if INVAL_GC:
             gc.collect()
 
 

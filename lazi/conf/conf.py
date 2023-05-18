@@ -97,7 +97,7 @@ class Conf(ModuleType):
     def __mods__(self) -> Iterator[ModuleInfo]:
         return (
             mi for mi in _iter_modules(self.__conf__.__path__, self.__conf__.__name__ + ".")
-            if mi.name not in (self.__auto__, self.base.__name__, __name__)
+            if mi.name not in {self.__root__.__name__, self.base.__name__, self.__auto__, self.__name__}
         )
 
     def __getattr__(self, attr) -> object:

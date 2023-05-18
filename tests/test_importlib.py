@@ -27,5 +27,5 @@ def test_import_module(attr, name, package, expected_type):
             if attr is not None:
                 with track(f"getattr({name}, {attr})"):
                     value = getattr(module, attr)
-                    log("value:", repr(value))
+                    log(f"value: {repr(value)}")
             assert issubclass(type(module), expected_type)

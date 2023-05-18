@@ -18,8 +18,11 @@ __all__ = "Spec",
 Finder = ForwardRef("Finder")
 Loader = ForwardRef("Loader")
 
-
 STDLIB_PATH = Path(sysconfig.get_path("stdlib"))  # Preload sysconfig data.
+
+NO_HOOK = conf.NO_HOOK
+NO_HOOK_BI = conf.NO_HOOK_BI
+NO_HOOK_STD = conf.NO_HOOK_STD
 
 
 class Spec(ModuleSpec):
@@ -55,7 +58,7 @@ class Spec(ModuleSpec):
 
     @cached_property
     def hook(self) -> bool:
-        return not conf.NO_HOOK and (
-            (not self.builtin or not conf.NO_HOOK_BI) and
-            (not self.stdlib or not conf.NO_HOOK_STD)
+        return not NO_HOOK and (
+            (not self.builtin or not NO_HOOK_BI) and
+            (not self.stdlib or not NO_HOOK_STD)
         )

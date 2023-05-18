@@ -9,21 +9,21 @@ def test_django_version_lazy():
         django = finder.lazy("django")
         debug.trace("test_django_version_lazy: ^- finder.lazy")
         version = django.VERSION
-        debug.trace("test_django_version_lazy: ^- VERSION: ", version)
+        debug.trace(f"test_django_version_lazy: ^- VERSION: {version}")
         assert isinstance(version, tuple), version
 
 
-# def test_django_version_import():
-#     from lazi.util import debug
-#     from lazi.core.finder import Finder
-#
-#     with Finder():
-#         debug.trace("test_django_version_import: import django ->")
-#         import django
-#         debug.trace("test_django_version_import: ^- import django")
-#         version = django.VERSION
-#         debug.trace("test_django_version_import: ^- VERSION: ", version)
-#         assert isinstance(version, tuple), version
+def test_django_version_import():
+    from lazi.util import debug
+    from lazi.core.finder import Finder
+
+    with Finder():
+        debug.trace("test_django_version_import: import django ->")
+        import django
+        debug.trace("test_django_version_import: ^- import django")
+        version = django.VERSION
+        debug.trace(f"test_django_version_import: ^- VERSION: {version}")
+        assert isinstance(version, tuple), version
 
 
 def test_asgiref():

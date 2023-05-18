@@ -20,6 +20,8 @@ __all__ = "Loader",
 Spec = ForwardRef("Spec")
 Module = ForwardRef("Module")
 
+NO_LAZY_LOAD = conf.NO_LAZY_LOAD
+
 
 class Loader(_Loader):
     spec: Spec
@@ -57,7 +59,7 @@ class Loader(_Loader):
 
             spec.loader_state = Loader.State.CREA
 
-            if conf.NO_LAZY_LOAD:  # or spec.s_path is None:  # Consider whether spec is a package?
+            if NO_LAZY_LOAD:  # or spec.s_path is None:  # Consider whether spec is a package?
                 self.__forc = True
 
             modules[spec.name] = target
@@ -119,9 +121,9 @@ class Loader(_Loader):
 
         except Exception as e:
             spec.loader_state = nexts = Loader.State.DEAD
-            assert None is debug.traced(
-                -1, f"[{id(module)}] {state} {nexts} [{id(target) if target is not None else '*'*15}] {name_}\n" +
-                    " " * 18 + f"!!!! {type(e).__name__}: {e}"
+            assert None is debug.log(
+                f"[{id(module)}] {state} {nexts} [{id(target) if target is not None else '*'*15}] {name_}\n" +
+                " " * 18 + f"!!!! {type(e).__name__}: {e}"
             )
             raise
 
@@ -142,9 +144,9 @@ class Loader(_Loader):
         spec = spec if spec is not None else self.spec
         module = modules.pop(spec.name, None)
 
-        assert None is debug.traced(
-            2, f"[{id(module) if module else '*'*15}] "
-               f"{spec.loader_state} DEAD [{id(spec.target) if spec.target else '*'*15}] {spec.f_name}"
+        assert None is debug.log(
+            f"[{id(module) if module else '*'*15}] "
+            f"{spec.loader_state} DEAD [{id(spec.target) if spec.target else '*'*15}] {spec.f_name}"
         )
 
         spec.loader = self.loader
