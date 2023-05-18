@@ -5,6 +5,7 @@ __meta__ = dict(                        # Internal configuration for <root>.conf
 )                                       # See conf.py for more options.
 #
 TRACE: int = 0                          # Enable debug traces. Currently using levels 0-4.
+TRACEE: bool = True                     # Enable debug traces for loader exceptions when TRACE is 0.
 #                                       # - Tracing relies on __debug__ and asserts, so -O will disable completely.
 AUTO_AUTO: bool = True                  # Automatically install when importing lazi.auto.
 CORE_AUTO: bool = False                 # Automatically install when importing lazi.core.

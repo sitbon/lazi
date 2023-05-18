@@ -111,7 +111,7 @@ Example:
 ```pycon
 >>> import lazi.auto
 >>> import pandas.core.nanops
-[140343991111888] EXEC DEAD [140343991111968] dateutil.tz|win !!!! six.moves
+[140343991111888] EXEC DEAD [140343991111968] dateutil.tz|win !!!! six.moves  # This is unrelated.
 [140343977781872] EXEC DEAD [140343977777872] pandas.core|nanops !!!! 
                   !!!! OptionError: No such keys(s): 'compute.use_bottleneck'
 Traceback (most recent call last):
@@ -134,9 +134,9 @@ pandas._config.config.OptionError: No such keys(s): 'compute.use_bottleneck'
 [140343976684704] EXEC DEAD [140343976684864] pandas.core.arrays.sparse|array !!!! pandas.core.nanops
 [140343976682224] EXEC DEAD [140343976682464] pandas.core.arrays.sparse|accessor !!!! pandas.core.nanops
 [140343976681984] EXEC DEAD [140343976681744] pandas.core.arrays.sparse !!!! pandas.core.nanops
-[140343980659536] EXEC DEAD [140343980659456] pandas.core.arrays !!!! pandas.core.nanops
-[140343980335376] EXEC DEAD [140343980335456] pandas.core|api !!!! pandas.core.nanops
-[140345351918096] EXEC DEAD [140345351918496] pandas !!!! pandas.core.nanops
+[140343980659536] EXEC DEAD [140343980659456] pandas.core.arrays !!!! pandas.core.nanops # No traceback means
+[140343980335376] EXEC DEAD [140343980335456] pandas.core|api !!!! pandas.core.nanops    # that this is a chain
+[140345351918096] EXEC DEAD [140345351918496] pandas !!!! pandas.core.nanops             # of ImportError's.
 Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
   File "/home/jq/pr/lazi/lazi/core/module.py", line 102, in __setattr__

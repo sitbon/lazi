@@ -21,7 +21,7 @@ Spec = ForwardRef("Spec")
 Module = ForwardRef("Module")
 
 NO_LAZY = conf.NO_LAZY
-
+TRACEE = conf.TRACEE
 
 class Loader(_Loader):
     spec: Spec
@@ -118,7 +118,11 @@ class Loader(_Loader):
 
         except Exception as e:
             spec.loader_state = nexts = Loader.State.DEAD
-            assert None is getattr(debug, "info" if isinstance(e, ImportError) else "exception")(
+            assert None is getattr(
+                debug,
+                "exception" if not isinstance(e, ImportError) and TRACEE else
+                "trace" if not TRACEE else "info"
+            )(
                 f"[{id(module)}] {state} {nexts} [{id(target) if target is not None else '*'*15}] {name_} !!!! " +
                 (('\n' + " " * 18 + f"!!!! {type(e).__name__}: {e}") if not isinstance(e, ImportError) else e.name)
             )
