@@ -40,7 +40,11 @@ class Loader(_Loader):
         DEAD = 5
 
     class Error(ImportError):
-        pass
+        exc: BaseException
+
+        def __init__(self, exc: BaseException, msg: str, /):
+            self.exc = exc
+            super().__init__(msg)
 
     def __init__(self, spec: Spec):
         self.spec = spec
@@ -133,7 +137,7 @@ class Loader(_Loader):
             )
 
             if not isinstance(e, Loader.Error):
-                raise Loader.Error(f"Error loading {name_}" if not __debug__ else msg) from e
+                raise Loader.Error(e, f"Error loading {name_}" if not __debug__ else msg) from e
 
             raise
 
