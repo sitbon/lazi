@@ -6,13 +6,18 @@ __meta__ = dict(                        # Internal configuration for <root>.conf
 #
 TRACE: int = 0                          # Enable debug traces. Currently using levels 0-4.
 #                                       # - Tracing relies on __debug__ and asserts, so -O will disable completely.
-AUTO_AUTO: bool = True                  # Automatically install when importing lazi.auto.
-CORE_AUTO: bool = False                 # Automatically install when importing lazi.core.
+NO_LAZY: int = 0                        # Hook loaders, but skip lazy loading.
+#                                       # - 0: Lazy load all modules.
+#                                       # - 1: Skip lazy loading.
+#                                       # - 2: Skip lazy loading, and unwrap the module as well.
+#                                       # - 3: Skip lazy loading, and unhook the loader as well.
 #
 NO_HOOK: bool = False                   # Disable all spec loader hooks.
-NO_LAZY: bool = False                   # Hook loaders, but skip lazy loading.
 NO_HOOK_STD: bool = False               # Disable spec loader hooking for stdlib modules.
 NO_HOOK_BI: bool = False                # Disable spec loader hooking for built-in modules.
+#
+AUTO_AUTO: bool = True                  # Automatically install when importing lazi.auto.
+CORE_AUTO: bool = False                 # Automatically install when importing lazi.core.
 #
 INVAL_SOFT: bool = False                # Keep modules in sys.modules after cache invalidation.
 INVAL_GC: bool = (not INVAL_SOFT)       # Enable garbage collection on cache invalidation.

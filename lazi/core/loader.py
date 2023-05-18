@@ -61,18 +61,25 @@ class Loader(_Loader):
         self.__busy = True
 
         try:
-            target = spec.target if spec.target is not None else self.loader.create_module(spec)
-            target = ModuleType(spec.name) if target is None else target
-            target = spec.finder.Module(spec, target) if not isinstance(target, spec.finder.Module) else target
+            module = spec.target if spec.target is not None else self.loader.create_module(spec)
+            module = ModuleType(spec.name) if module is None else module
+            module = spec.finder.Module(spec, module) if not isinstance(module, spec.finder.Module) else module
 
             spec.loader_state = Loader.State.CREA
 
-            if NO_LAZY:  # or spec.s_path is None:  # Consider whether spec is a package?
+            if NO_LAZY:  # or spec.s_path is None:  # Consider whether spec is a (namespace?) package?
                 self.__forc = True
+                if NO_LAZY >= 2 and module is not spec.target:
+                    module = spec.target
+                if NO_LAZY >= 3:
+                    spec.loader_state = None
+                    module.__loader__ = self.loader
+                    spec.loader = self.loader
+                    spec.target = None
 
-            modules[spec.name] = target
+            modules[spec.name] = module  # TODO: Determine where internals are doing this already.
 
-            return target
+            return module
 
         finally:
             self.__busy = False

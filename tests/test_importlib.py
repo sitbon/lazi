@@ -29,3 +29,5 @@ def test_import_module(attr, name, package, expected_type):
                     value = getattr(module, attr)
                     info(f"value: {repr(value)}")
             assert issubclass(type(module), expected_type)
+
+    lazi.invalidate_caches()
