@@ -123,8 +123,6 @@ class Loader(_Loader):
                 f"[{id(module)}] {state} {nexts} [{id(target) if target is not None else '*'*15}] {name_}\n" +
                 " " * 18 + f"!!!! {type(e).__name__}: {e}"
             )
-            if name in modules:
-                del modules[name]
             raise
 
         if (mod := modules.get(name)) is not module and mod is not None:
