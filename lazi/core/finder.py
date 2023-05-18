@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import gc
 import sys
+import atexit
 from types import ModuleType
 from importlib.abc import MetaPathFinder
 from importlib.machinery import ModuleSpec
@@ -147,3 +148,5 @@ class Finder(MetaPathFinder):
 
 
 __finder__: Finder = Finder()
+
+atexit.register(__finder__.invalidate_caches)
