@@ -27,13 +27,9 @@ TRACE = conf.TRACE
 class Loader(_Loader):
     spec: Spec
     loader: _Loader
-    module: Module | None = None
 
     __busy: bool = False
     __forc: bool = False
-
-    __lazy: list[Loader] = []
-    __load: list[Loader] = []
 
     class State(IntEnum):
         __str__ = lambda self: self.name
@@ -53,13 +49,6 @@ class Loader(_Loader):
         def __init__(self, exc: BaseException, msg: str, /):
             self.exc = exc
             super().__init__(msg)
-
-    class LazyException(Exception):
-        loader: Loader
-
-        def __init__(self, loader: Loader):
-            self.loader = loader
-            super().__init__(f"Lazy loader {loader!r} is not ready.")
 
     def __init__(self, spec: Spec):
         self.spec = spec
@@ -94,7 +83,7 @@ class Loader(_Loader):
 
             modules[spec.name] = module  # TODO: Determine where internals are doing this already.
             #                            # - Might also pass a flag down from Finder.lazy() to indicate non-global import.
-            self.module = module
+
             return module
 
         finally:
@@ -111,8 +100,7 @@ class Loader(_Loader):
         target = spec.target
         in_sys = name in modules
 
-        assert module is self.module, (module, self.module)
-        assert state in (Loader.State.CREA, Loader.State.LAZY, Loader.State.EXEC), state
+        assert state in (Loader.State.CREA, Loader.State.LAZY), state
 
         if (mod := modules.get(name)) is not module:
             if in_sys:
@@ -136,21 +124,10 @@ class Loader(_Loader):
         spec.loader_state = nexts
 
         if nexts <= Loader.State.LAZY:
-            if not NO_LAZY:
-                self.__lazy.append(self)
             return
 
-        if not NO_LAZY and self in self.__lazy:
-            self.__lazy.remove(self)
-
-            if self.__load and self.__lazy:
-                spec.loader_state = Loader.State.LAZY
-                raise Loader.LazyException(self)
-
         try:
-            self.__load.append(self)
             self.loader.exec_module(target if target is not None else module)
-            self.__load.pop()
 
             state = nexts
             spec.loader_state = nexts = Loader.State.LOAD
@@ -162,26 +139,15 @@ class Loader(_Loader):
                 f"++++ "
             )
 
-        except Loader.LazyException as e:
-            self.__load.pop()
-
-            if self.__load or NO_LAZY:
-                spec.loader_state = Loader.State.LAZY if not NO_LAZY else Loader.State.DEAD  # NO_LAZY is always 0 here.
-                raise
-
-            e.loader.exec_module(e.loader.module, True)
-            return self.exec_module(module, True)
-
         except Exception as e:
-            self.__load.pop()
             spec.loader_state = nexts = Loader.State.DEAD
             assert None is debug.trace(
                 msg :=
                 f"[{oid(module)}] {state} {nexts} [{oid(target) if target is not None else '*'*15}] {name_} !!!! "
-                f"{type(e).__name__ if not isinstance(e, Loader.Error) else ''}"
+                f"{type(e).__name__ if not isinstance(e, Loader.Exception) else ''}"
             )
 
-            if not isinstance(e, Loader.Error):
+            if not isinstance(e, Loader.Exception):
                 raise Loader.Error(e, f"Error loading {name_}" if not __debug__ else msg) from e
 
             raise
