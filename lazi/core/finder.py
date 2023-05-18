@@ -149,4 +149,4 @@ class Finder(MetaPathFinder):
 
 __finder__: Finder = Finder()
 
-atexit.register(__finder__.invalidate_caches)
+atexit.register(lambda: [finder.invalidate_caches() for finder in Finder.__finders__])

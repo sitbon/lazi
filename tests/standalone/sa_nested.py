@@ -20,13 +20,14 @@ def do_imports(lazi_):
 
 
 if AUTO:
-    from lazi.auto import lazi
+    from lazi.auto import lazi, Finder
 
     def nested():
         with lazi:
-            do_imports(lazi)
+            with Finder():
+                do_imports(lazi)
 
-    with lazi:
+    with lazi, Finder(), Finder():
         nested()
 
 

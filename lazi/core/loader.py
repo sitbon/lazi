@@ -144,7 +144,8 @@ class Loader(_Loader):
         spec = spec if spec is not None else self.spec
         module = modules.pop(spec.name, None)
 
-        assert None is debug.log(
+        assert None is debug.traced(
+            1,
             f"[{id(module) if module else '*'*15}] "
             f"{spec.loader_state} DEAD [{id(spec.target) if spec.target else '*'*15}] {spec.f_name}"
         )
