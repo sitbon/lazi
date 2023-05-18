@@ -10,9 +10,9 @@ AUTO_AUTO: bool = True                  # Automatically install when importing l
 CORE_AUTO: bool = False                 # Automatically install when importing lazi.core.
 #
 NO_HOOK: bool = False                   # Disable all spec loader hooks.
+NO_LAZY: bool = False                   # Hook loaders, but skip lazy loading.
 NO_HOOK_STD: bool = False               # Disable spec loader hooking for stdlib modules.
 NO_HOOK_BI: bool = False                # Disable spec loader hooking for built-in modules.
-NO_LAZY_LOAD: bool = False              # Next call to exec_module() skips lazy loading.
 #
 INVAL_SOFT: bool = False                # Keep modules in sys.modules after cache invalidation.
 INVAL_GC: bool = (not INVAL_SOFT)       # Enable garbage collection on cache invalidation.

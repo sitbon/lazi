@@ -55,7 +55,7 @@ class Finder(MetaPathFinder):
                 self.__finders__.remove(self)
                 self.invalidate_caches()
         except Exception as e:
-            assert None is debug.log(
+            assert None is debug.info(
                 f"[{id(self)}] DEL! {self.__class__.__name__} !!!! {type(e).__name__}: {e}"
             )
 

@@ -3,9 +3,12 @@ import logging
 
 from lazi.conf import conf
 
-__all__ = "trace", "traced", "log", "track"
+__all__ = "trace", "traced", "info", "track"
 
 TRACE = conf.TRACE
+
+info = logging.info
+exception = logging.exception
 
 
 if __debug__ and TRACE:
@@ -21,18 +24,15 @@ if __debug__ and TRACE:
 else:
     traced = lambda at, /, *args, **kwds: None
     trace = lambda *args, **kwds: None
-    init_pretty = lambda: None
-
-log = logging.info
 
 
 @contextmanager
-def track(msg: str):
+def track(msg: str, log=info):
     log(f"... {msg} ...")
     try:
         yield
     except Exception as e:
-        log(_log := f"!!! {msg} !!! {type(e).__name__}: {e}")
+        exception(_log := f"!!! {msg} !!! {type(e).__name__}: {e}")
         raise
     else:
         log(f"^^^ {msg} ^^^")

@@ -15,7 +15,7 @@ import importlib
     (None, "django.db.models.aggregates", "django.db.", ModuleType),
 ])
 def test_import_module(attr, name, package, expected_type):
-    from lazi.util.debug import track, log
+    from lazi.util.debug import track, info
     from lazi.core import lazi
 
     with lazi, track(f"import {name}{f'[.{attr}]' if attr else ''}"):
@@ -27,5 +27,5 @@ def test_import_module(attr, name, package, expected_type):
             if attr is not None:
                 with track(f"getattr({name}, {attr})"):
                     value = getattr(module, attr)
-                    log(f"value: {repr(value)}")
+                    info(f"value: {repr(value)}")
             assert issubclass(type(module), expected_type)
