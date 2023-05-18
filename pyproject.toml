@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "lazi"
-version = "1.8.119"
+version = "1.8.128"
 description = "A lightweight and extensible way to implement lazy imports globally."
 authors = ["Phillip Sitbon <phillip.sitbon@gmail.com>"]
 readme = "README.md"
