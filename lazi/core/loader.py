@@ -69,12 +69,9 @@ class Loader(_Loader):
         finally:
             self.__busy = False
 
-    def exec_module(self, module: Module, spec: Spec | None = None, force: bool | None = None, /):
-        spec = spec if spec is not None else self.spec
+    def exec_module(self, module: Module, force: bool | None = None, /):
+        spec = self.spec
         lazy = not (force if force is not None else self.__forc)
-
-        assert spec is module.__spec__, (spec, module.__spec__)
-        assert spec.loader is self, (spec.loader, self)
 
         name = spec.name
         name_ = spec.f_name
@@ -140,13 +137,15 @@ class Loader(_Loader):
         # if nexts is Loader.State.LOAD and target is not None:
         #     modules[name] = target
 
-    def invalidate_caches(self, spec: Spec | None = None) -> None:
-        spec = spec if spec is not None else self.spec
-        module = modules.pop(spec.name, None)
+    def invalidate_caches(self) -> None:
+        spec = self.spec
+
+        if (mod := modules.get(spec.name)) is spec.target and mod is not None:
+            del modules[spec.name]
 
         assert None is debug.traced(
             1,
-            f"[{id(module) if module else '*'*15}] "
+            f"[{id(mod) if mod is not None else '*'*15}] "
             f"{spec.loader_state} DEAD [{id(spec.target) if spec.target else '*'*15}] {spec.f_name}"
         )
 

@@ -72,7 +72,7 @@ class Module(ModuleType):
                 f"[{id(self)}] {spec.loader_state} >>>> [{id(target) if target is not None else '*' * 15}] "
                 f"{spec.f_name}[.{attr}]"
             )
-            spec.loader.exec_module(self, spec, True)
+            spec.loader.exec_module(self, True)
 
         return spec.target.__getattribute__(attr)  # NB: Don't use `target` here, as it may have changed.
 
@@ -99,6 +99,6 @@ class Module(ModuleType):
             )
 
             target.__setattr__(attr, valu)  # Preload the variable? Yes: Fixes stdlib (asyncio.coroutines) errors in README.md.
-            spec.loader.exec_module(self, spec, True)
+            spec.loader.exec_module(self, True)
 
         spec.target.__setattr__(attr, valu)  # NB: Don't use `target` here, as it may have changed.

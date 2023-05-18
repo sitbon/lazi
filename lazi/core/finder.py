@@ -139,7 +139,7 @@ class Finder(MetaPathFinder):
         if not INVAL_SOFT:
             while self.specs and (spec := self.specs.popitem()[1]):
                 if hasattr(spec.loader, "invalidate_caches"):
-                    spec.loader.invalidate_caches(spec)
+                    spec.loader.invalidate_caches()
         else:
             self.specs.clear()
 
