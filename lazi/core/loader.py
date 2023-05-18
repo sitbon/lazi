@@ -119,8 +119,8 @@ class Loader(_Loader):
         except Exception as e:
             spec.loader_state = nexts = Loader.State.DEAD
             assert None is getattr(debug, "info" if isinstance(e, ImportError) else "exception")(
-                f"[{id(module)}] {state} {nexts} [{id(target) if target is not None else '*'*15}] {name_}\n" +
-                " " * 18 + f"!!!! {type(e).__name__}: {e}"
+                f"[{id(module)}] {state} {nexts} [{id(target) if target is not None else '*'*15}] {name_} !!!!" +
+                (('\n' + " " * 18 + f"!!!! {type(e).__name__}: {e}") if not isinstance(e, ImportError) else "")
             )
             raise
 
@@ -141,7 +141,7 @@ class Loader(_Loader):
             del modules[spec.name]
 
         assert None is debug.traced(
-            1,
+            2,
             f"[{id(mod) if mod is not None else '*'*15}] "
             f"{spec.loader_state} DEAD [{id(spec.target) if spec.target else '*'*15}] {spec.f_name}"
         )

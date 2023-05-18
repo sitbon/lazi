@@ -126,7 +126,7 @@ class Finder(MetaPathFinder):
                 f"[{id(self)}] FIND " +
                 ((Path(c).suffix[1:] if (c := spec.cached) else Path(o).suffix[1:] if (o := spec.origin) else '?') +
                     f"{'S' if spec.stdlib else ''}{'B' if spec.builtin else ''}").ljust(5) +
-                spec.f_name
+                f"{spec.f_name} {'*' if path is None else ''}"
             )
 
             return spec

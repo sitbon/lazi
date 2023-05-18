@@ -40,6 +40,8 @@ class Spec(ModuleSpec):
 
     f_name: str | None = cached_property(lambda self: self._f_name())
 
+    is_package: bool = cached_property(lambda self: self.submodule_search_locations is not None)
+
     def __init__(self, finder: Finder, spec: ModuleSpec, path: list[str] | None = None, target: ModuleType | None = None):
         self.finder = finder
         self.s_path = path
@@ -50,7 +52,7 @@ class Spec(ModuleSpec):
             loader=spec.loader,
             origin=spec.origin,
             loader_state=spec.loader_state,
-            is_package=spec.submodule_search_locations is not None,
+            is_package=spec.submodule_search_locations is not None or path is None,
         )
 
         self.__dict__.update(spec.__dict__)
