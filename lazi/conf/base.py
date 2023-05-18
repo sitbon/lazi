@@ -24,8 +24,8 @@ CONF_NO_CACHING: bool | None = None     # Disable caching of conf vars.
 #                                                 caching if `lazi.core` is already present in sys.modules
 #                                                 when lazi.conf.conf is imported.
 #
-CONF_KEYS: set = {                      # Configuration keys that are allowed to be set.
-    key for key in globals()            # - Can be inherited / changed, but support is untested.
-    if not key.startswith("_")          # - envs.py does not support anything other than this base value,
-    and key.isupper()                   # along with __meta__["keys"] and __meta__["root"] as a prefix (TBD).
-}
+__all__: list = [                       # Configuration keys that are allowed to be set.
+    key for key in globals()            # - Not inherited or mutable.
+    if not key.startswith("_")          # - Can be supplemented from __meta__['keys'].
+    and key.isupper()
+]

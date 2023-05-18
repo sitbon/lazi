@@ -35,7 +35,7 @@ def parse_item(typp: type, valu: str) -> object:
 def load():
     from lazi.conf import base
     typd: dict[str, type] = _typing.get_type_hints(base)
-    keys: set[str] = base.CONF_KEYS | base.__meta__.get("keys", set())
+    keys: set[str] = set(base.__all__) | base.__meta__.get("keys", set())
 
     for key in (_ for _ in keys if _ in _os.environ and _ in typd):
         if (value := _os.getenv(key, no := object())) is not no:

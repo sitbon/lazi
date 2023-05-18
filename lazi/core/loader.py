@@ -71,7 +71,7 @@ class Loader(_Loader):
 
     def exec_module(self, module: Module, force: bool | None = None, /):
         spec = self.spec
-        lazy = not (force if force is not None else self.__forc)
+        lazy = not ((force or self.__forc) if force is not None else self.__forc)
 
         name = spec.name
         name_ = spec.f_name
@@ -118,10 +118,13 @@ class Loader(_Loader):
 
         except Exception as e:
             spec.loader_state = nexts = Loader.State.DEAD
-            assert None is debug.info(
+            assert None is debug.traced(
+                0 if not isinstance(e, ImportError) else 1,
                 f"[{id(module)}] {state} {nexts} [{id(target) if target is not None else '*'*15}] {name_}\n" +
                 " " * 18 + f"!!!! {type(e).__name__}: {e}"
             )
+            if name in modules:
+                del modules[name]
             raise
 
         if (mod := modules.get(name)) is not module and mod is not None:

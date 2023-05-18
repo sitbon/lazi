@@ -5,11 +5,11 @@ from lazi.conf import conf
 
 __all__ = "trace", "traced", "info", "track"
 
-TRACE = conf.TRACE
 
 info = logging.info
 exception = logging.exception
 
+TRACE = conf.TRACE
 
 if __debug__ and TRACE:
 

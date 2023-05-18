@@ -61,7 +61,7 @@ class Conf(ModuleType):
     __core__: str = f"{__root__.__name__}.{base.__meta__.get('core', 'core')}"
     __auto__: str = f"{__conf__.__name__}.{base.__meta__.get('auto', 'auto')}"
 
-    __keys__: set = {"CONF_KEYS"} | CONF_KEYS | base.__meta__.get("keys", set())
+    __keys__: set = set(base.__all__) | set(base.__meta__.get("keys", set()))
 
     conf: dict[str, object | EllipsisType] = {key: ... for key in __keys__}
 
@@ -75,7 +75,6 @@ class Conf(ModuleType):
         if (conf_no_caching := self.CONF_NO_CACHING) is not None:
             self.__CONF_NO_CACHING = conf_no_caching
         self.CONF_NO_CACHING = self.__CONF_NO_CACHING
-        self.CONF_KEYS = self.__keys__
 
     def __iter__(self) -> Iterator[tuple[str, object]]:
         return ((key, getattr(self, key)) for key in self.conf)
@@ -100,9 +99,9 @@ class Conf(ModuleType):
             if mi.name not in {self.__root__.__name__, self.base.__name__, self.__auto__, self.__name__}
         )
 
-    def __getattr__(self, attr) -> object:
+    def __getattr__(self, attr: str) -> object:
 
-        if (value := self.conf.get(attr, miss := AttributeError())) is miss:
+        if (value := self.conf.get(attr, miss := object())) is miss:
             raise AttributeError(f"Module {__name__!r} has no attribute {attr!r}")
 
         elif value is ...:
@@ -116,31 +115,20 @@ class Conf(ModuleType):
 
                 value = getattr(mod, attr, value)
 
-            value = self.__setattr__(attr, value)
+            self.__setattr__(attr, value)
 
         return value
 
-    def __setattr__(self, key, value) -> object:
-        if key.startswith("_"):
-            super().__setattr__(key, value)
-            return value
+    def __setattr__(self, attr: str, value: object) -> None:
+        if attr.startswith("_") or not attr.isupper():
+            super().__setattr__(attr, value)
+            return
 
-        if key not in self.conf and key != "CONF_KEYS" and key not in self.CONF_KEYS:
-            raise AttributeError(f"Conf key {key!r} is not defined.")
+        if attr not in self.conf:
+            raise AttributeError(f"Conf key {attr!r} is not defined.")
         if not self.__CONF_NO_CACHING:
-
-            if key == "CONF_KEYS" and value is not self.__keys__:
-                self.__all__ = list(set(self.__all__) | set(value))
-                for conf_key in (_ for _ in dict(self.conf) if _ != "CONF_KEYS" and _ not in value):
-                    del self.conf[conf_key]
-                for conf_key in (_ for _ in value if _ != "CONF_KEYS" and _ not in self.conf):
-                    self.conf[conf_key] = ...
-                self.conf["CONF_KEYS"] = value
-
-            self.conf[key] = value
-            super().__setattr__(key, value)
-
-        return value
+            self.conf[attr] = value
+            super().__setattr__(attr, value)
 
 
 _sys.modules[__name__] = Conf()  # Replace module with instance.
