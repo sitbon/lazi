@@ -15,19 +15,18 @@ poetry add lazi
 TRACE=1 python3
 ```
 ```pycon
-Python 3.11.2
 >>> import lazi.auto
->>> from django import test
-[139840712693360] LAZY >>>> [139840715383056] django[.test]
-[139840712694640] LAZY <<<< [139840712694240] django.utils[.version] = [139840712695040]
-[139840712695040] LAZY >>>> [139840712694880] [django.utils.]django.utils.version[.get_version]
-[139840712696720] LAZY >>>> [139840712696000] [django.utils.]django.utils.regex_helper[._lazy_re_compile]
-[139840712697680] LAZY >>>> [139840712697280] [django.utils.]django.utils.functional[.SimpleLazyObject]
->>> test.TestCase
-# ... A lot of output ...
-<class 'django.test.testcases.TestCase'>
+>>> import django
+>>> django.VERSION
+[140071460506656] LAZY >>>> [140071460989312] django[.VERSION]  # Lazy loaded `django` due to `VERSION` attr access.
+[140071459492368] LAZY <<<< [140071459492448] django.utils[.version] = [140071459492928]
+[140071459492928] LAZY >>>> [140071459492848] [django.utils.]django.utils.version[.get_version]
+[140071459495168] LAZY >>>> [140071459495008] [django.utils.]django.utils.regex_helper[._lazy_re_compile]
+[140071459496048] LAZY >>>> [140071459495888] [django.utils.]django.utils.functional[.SimpleLazyObject]
+(4, 2, 1, 'final', 0)
 >>> _
 ```
+
 
 ### Use for specific modules:
 
