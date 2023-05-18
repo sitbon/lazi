@@ -13,7 +13,7 @@ from enum import IntEnum
 from importlib.abc import Loader as _Loader
 
 from lazi.conf import conf
-from lazi.util import debug
+from lazi.util import debug, oid
 
 __all__ = "Loader",
 
@@ -23,6 +23,7 @@ Module = ForwardRef("Module")
 NO_LAZY = conf.NO_LAZY
 TRACE = conf.TRACE
 TRACEE = conf.TRACEE
+
 
 class Loader(_Loader):
     spec: Spec
@@ -86,8 +87,8 @@ class Loader(_Loader):
         if (mod := modules.get(name)) is not module:
             if in_sys:
                 assert None is debug.trace(
-                    f"[{id(module)}] {state} {nexts} [{id(target) if target is not None else '*'*15}] {name_} "
-                    f"::[{id(mod) if mod is not target else 'same' if mod is not None else '-'}] "
+                    f"[{oid(module)}] {state} {nexts} [{oid(target) if target is not None else '*'*15}] {name_} "
+                    f"::[{oid(mod) if mod is not target else 'same' if mod is not None else '-'}] "
                     "(before)"
                 ), "module was replaced in sys.modules before exec_module"
 
@@ -98,7 +99,7 @@ class Loader(_Loader):
 
         assert None is debug.traced(
             1,  # if nexts is Loader.State.EXEC else 2,
-            f"[{id(module)}] {state} {nexts} [{id(target) if target is not None else '*'*15}] {name_} "
+            f"[{oid(module)}] {state} {nexts} [{oid(target) if target is not None else '*'*15}] {name_} "
             f"{'>>>> ' if nexts is Loader.State.EXEC else '.... '}"
         )
 
@@ -117,7 +118,7 @@ class Loader(_Loader):
 
             assert None is debug.traced(
                 1,  # if nexts is Loader.State.LOAD else 2,
-                f"[{id(module)}] {state} {nexts} [{id(target) if target is not None else '*'*15}] {name_} "
+                f"[{oid(module)}] {state} {nexts} [{oid(target) if target is not None else '*'*15}] {name_} "
                 f"++++ "
             )
 
@@ -128,7 +129,7 @@ class Loader(_Loader):
                 "exception" if not isinstance(e, ImportError) and (TRACEE or TRACE > 0) else
                 "trace" if not TRACEE else "info"
             )(
-                f"[{id(module)}] {state} {nexts} [{id(target) if target is not None else '*'*15}] {name_} !!!! " +
+                f"[{oid(module)}] {state} {nexts} [{oid(target) if target is not None else '*'*15}] {name_} !!!! " +
                 (('\n' + " " * 18 + f"!!!! {type(e).__name__}: {e}") if not isinstance(e, ImportError) else e.name)
             )
             raise
@@ -136,8 +137,8 @@ class Loader(_Loader):
         if (mod := modules.get(name)) is not module:
             if in_sys:
                 assert None is debug.trace(
-                    f"[{id(module)}] {state} {nexts} [{id(target) if target is not None else '*'*15}] {name_} "
-                    f"::[{id(mod) if mod is not target else 'same' if mod is not None else '-'}] "
+                    f"[{oid(module)}] {state} {nexts} [{oid(target) if target is not None else '*'*15}] {name_} "
+                    f"::[{oid(mod) if mod is not target else 'same' if mod is not None else '-'}] "
                     "(after)"
                 ), "module was replaced in sys.modules after exec_module"
 
@@ -154,8 +155,8 @@ class Loader(_Loader):
 
         assert None is debug.traced(
             2,
-            f"[{id(mod) if mod is not None else '*'*15}] "
-            f"{spec.loader_state} DEAD [{id(spec.target) if spec.target else '*'*15}] {spec.f_name}"
+            f"[{oid(mod) if mod is not None else '*'*15}] "
+            f"{spec.loader_state} DEAD [{oid(spec.target) if spec.target else '*'*15}] {spec.f_name}"
         )
 
         spec.loader = self.loader

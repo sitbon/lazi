@@ -18,7 +18,7 @@ from importlib import import_module
 from pathlib import Path
 
 from lazi.conf import conf
-from lazi.util import classproperty, debug
+from lazi.util import classproperty, debug, oid
 
 from .spec import Spec
 from .loader import Loader
@@ -45,7 +45,7 @@ class Finder(MetaPathFinder):
     meta_path = classproperty(lambda cls: (_ for _ in sys.meta_path if isinstance(_, cls)))
 
     def __init__(self):
-        assert None is debug.traced(3, f"[{id(self)}] INIT {self.__class__.__name__} count:{len(self.__finders__)}")
+        assert None is debug.traced(3, f"[{oid(self)}] INIT {self.__class__.__name__} count:{len(self.__finders__)}")
         self.__finders__.append(self)
         self.specs = {}
 
@@ -56,7 +56,7 @@ class Finder(MetaPathFinder):
                 self.invalidate_caches()
         except Exception as e:
             assert None is debug.info(
-                f"[{id(self)}] DEL! {self.__class__.__name__} !!!! {type(e).__name__}: {e}"
+                f"[{oid(self)}] DEL! {self.__class__.__name__} !!!! {type(e).__name__}: {e}"
             )
 
     def __enter__(self) -> Finder:
@@ -64,7 +64,7 @@ class Finder(MetaPathFinder):
             assert self.__refs == 0, self.__refs
             assert None is debug.traced(
                 2,
-                f"[{id(self)}] HOOK {self.__class__.__name__} refs:{self.__refs} "
+                f"[{oid(self)}] HOOK {self.__class__.__name__} refs:{self.__refs} "
                 f"inst:{len(list(self.meta_path))} sys:{len(sys.meta_path)} "
             )
             sys.meta_path.insert(0, self)
@@ -83,7 +83,7 @@ class Finder(MetaPathFinder):
 
         assert None is debug.traced(
             2,
-            f"[{id(self)}] EXIT {self.__class__.__name__} refs:{self.__refs} "
+            f"[{oid(self)}] EXIT {self.__class__.__name__} refs:{self.__refs} "
             f"inst:{len(list(self.meta_path))} sys:{len(sys.meta_path)} "
         )
 
@@ -98,9 +98,8 @@ class Finder(MetaPathFinder):
             return None
 
         assert None is debug.traced(
-            2 if target is None else 1,
-            f"[{id(self)}] SPEC FIND {name} [{len(path) if path is not None else '*'}] "
-            f"[{id(target) if target is not None else '-'}]"
+            4 if target is None else 1,
+            f"[{oid(self)}] SPEC FIND {name} {'' if path is not None else '*'}"
         )
 
         if (spec := self.specs.get(name)) is not None:
@@ -123,7 +122,7 @@ class Finder(MetaPathFinder):
 
             assert None is debug.traced(
                 1,
-                f"[{id(self)}] FIND " +
+                f"[{oid(self)}] FIND " +
                 ((Path(c).suffix[1:] if (c := spec.cached) else Path(o).suffix[1:] if (o := spec.origin) else '?') +
                     f"{'S' if spec.stdlib else ''}{'B' if spec.builtin else ''}").ljust(5) +
                 f"{spec.f_name} {'*' if path is None else ''}"

@@ -1,7 +1,7 @@
 from types import ModuleType
 from typing import ForwardRef
 
-from lazi.util import debug
+from lazi.util import debug, oid
 
 __all__ = "Module",
 
@@ -57,7 +57,7 @@ class Module(ModuleType):
             return super().__getattribute__(attr)
 
         assert None is debug.traced(
-            3, f"[{id(self)}] {spec.loader_state} **** [{id(target) if target is not None else '*' * 15}] "
+            3, f"[{oid(self)}] {spec.loader_state} .... [{oid(target) if target is not None else '*' * 15}] "
                f"{spec.f_name} {attr}"
         )
 
@@ -69,7 +69,7 @@ class Module(ModuleType):
 
         if spec.loader_state.value <= spec.loader.State.LAZY.value:
             assert None is debug.trace(
-                f"[{id(self)}] {spec.loader_state} >>>> [{id(target) if target is not None else '*' * 15}] "
+                f"[{oid(self)}] {spec.loader_state} >>>> [{oid(target) if target is not None else '*' * 15}] "
                 f"{spec.f_name} {attr}"
             )
             spec.loader.exec_module(self, True)
@@ -85,8 +85,8 @@ class Module(ModuleType):
         spec = super().__getattribute__("__spec__")
 
         assert None is debug.traced(
-            3, f"[{id(self)}] {spec.loader_state} %%%% [{id(spec.target) if spec.target is not None else '*' * 15}] "
-               f"{spec.f_name} {attr} = [{id(valu)}]"
+            3, f"[{oid(self)}] {spec.loader_state} .... [{oid(spec.target) if spec.target is not None else '*' * 15}] "
+               f"{spec.f_name} {attr} = [{oid(valu)}]"
         )
 
         if (target := getattr(spec, "target", None)) is None:
@@ -94,8 +94,8 @@ class Module(ModuleType):
 
         if attr not in SETATTR_PASS and spec.loader_state.value <= spec.loader.State.LAZY.value:
             assert None is debug.trace(
-                f"[{id(self)}] {spec.loader_state} <<<< [{id(target) if target is not None else '*' * 15}] "
-                f"{spec.f_name} {attr} = [{id(valu)}]"
+                f"[{oid(self)}] {spec.loader_state} >>>> [{oid(target) if target is not None else '*' * 15}] "
+                f"{spec.f_name} {attr} = [{oid(valu)}]"
             )
 
             target.__setattr__(attr, valu)  # Preload the variable? Yes: Fixes stdlib (asyncio.coroutines) errors in README.md.
