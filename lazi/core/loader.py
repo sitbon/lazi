@@ -79,18 +79,22 @@ class Loader(_Loader):
         state = spec.loader_state
         nexts = Loader.State.LAZY if lazy else Loader.State.EXEC
         target = spec.target
+        in_sys = name in modules
 
         assert state in (Loader.State.CREA, Loader.State.LAZY), state
 
-        if (mod := modules.get(name)) is not module and mod is not None:
-            assert None is debug.trace(
-                f"[{id(module)}] {state} {nexts} [{id(target) if target is not None else '*'*15}] {name_} "
-                f"::[{id(mod) if mod is not target else 'same' if mod is not None else '-'}] "
-                "(before)"
-            )
+        if (mod := modules.get(name)) is not module:
+            if in_sys:
+                assert None is debug.trace(
+                    f"[{id(module)}] {state} {nexts} [{id(target) if target is not None else '*'*15}] {name_} "
+                    f"::[{id(mod) if mod is not target else 'same' if mod is not None else '-'}] "
+                    "(before)"
+                ), "module was replaced in sys.modules before exec_module"
 
-            spec.target = target = mod
-            modules[name] = module
+                modules[name] = module
+
+            if mod is not None and mod is not target:
+                spec.target = target = mod
 
         assert None is debug.traced(
             1,  # if nexts is Loader.State.EXEC else 2,
@@ -129,15 +133,18 @@ class Loader(_Loader):
             )
             raise
 
-        if (mod := modules.get(name)) is not module and mod is not None:
-            assert None is debug.trace(
-                f"[{id(module)}] {state} {nexts} [{id(target) if target is not None else '*'*15}] {name_} "
-                f"::[{id(mod) if mod is not target else 'same' if mod is not None else '-'}] "
-                "(after)"
-            )
+        if (mod := modules.get(name)) is not module:
+            if in_sys:
+                assert None is debug.trace(
+                    f"[{id(module)}] {state} {nexts} [{id(target) if target is not None else '*'*15}] {name_} "
+                    f"::[{id(mod) if mod is not target else 'same' if mod is not None else '-'}] "
+                    "(after)"
+                ), "module was replaced in sys.modules after exec_module"
 
-            spec.target = target = mod
-            modules[name] = module
+                modules[name] = module
+
+            if mod is not None and mod is not spec.target:
+                spec.target = mod
 
     def invalidate_caches(self) -> None:
         spec = self.spec
