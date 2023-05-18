@@ -18,11 +18,11 @@ TRACE=1 python3
 >>> import lazi.auto
 >>> import django
 >>> django.VERSION
-[140071460506656] LAZY >>>> [140071460989312] django[.VERSION]  # Lazy loaded django due to VERSION attr access.
-[140071459492368] LAZY <<<< [140071459492448] django.utils[.version] = [140071459492928] # Ditto for django.utils setattr.
-[140071459492928] LAZY >>>> [140071459492848] [django.utils.]django.utils.version[.get_version]
-[140071459495168] LAZY >>>> [140071459495008] [django.utils.]django.utils.regex_helper[._lazy_re_compile]
-[140071459496048] LAZY >>>> [140071459495888] [django.utils.]django.utils.functional[.SimpleLazyObject]
+[140016542011360] LAZY >>>> [140016544686432] django VERSION  # Lazy loaded django due to VERSION attr access.
+[140016542012960] LAZY <<<< [140016542013120] django.utils version = [140016542013520]  # Ditto for django.utils setattr.
+[140016542013520] LAZY >>>> [140016542013920] django.utils|version get_version
+[140016542015600] LAZY >>>> [140016542015840] django.utils|regex_helper _lazy_re_compile
+[140016542016640] LAZY >>>> [140016542016880] django.utils|functional SimpleLazyObject
 (4, 2, 1, 'final', 0)
 >>> _
 ```
@@ -98,18 +98,14 @@ Or:
 >>> _
 ```
 
-### Tricky Situations.
+## Tricky Situations
 
-#### 1. Circular imports.
-
-Usually shows up as `AttributeError: 'module' object has no attribute 'attr'`.
-
-#### 2. Expected global state is not there.
+### Expected global state is not there.
 
 This is the most common issue when using `lazi.auto`, and can be difficult to debug.
 
 Fortunately, Lazi will show some useful tracebacks including the original exception before
-it was transformed into an `ImportError` or `AttributeError` (by CPython, thowing away the original traceback).
+it was transformed into an `ImportError` (by CPython, thowing away the original traceback).
 
 Example:
 ```pycon
@@ -191,8 +187,7 @@ As a result, it's possible configure Lazi by creating `lazi.conf`
 modules in your project (within the `lazi.conf` namespace package),
 and use conf modules provided by other packages.
 
-Configuration is not yet controllable via environment variables,
-but this is planned for the future. Update: Supported for DEBUG_TRACING.
+Configuration variables can also be set from the environment.
 
 It's also possible to manually change the configuration at runtime,
 with the caveat that some variables may have already been used by
