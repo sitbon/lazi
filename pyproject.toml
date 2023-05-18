@@ -1,9 +1,9 @@
 [tool.poetry]
 name = "lazi"
-version = "1.8.128"
+version = "1.9.137"
 description = "A lightweight and extensible way to implement lazy imports globally."
 authors = ["Phillip Sitbon <phillip.sitbon@gmail.com>"]
-readme = "README.md"
+readme = "readme.md"
 license = "AGPLv3"
 repository = "https://github.com/sitbon/lazi"
 classifiers= [
