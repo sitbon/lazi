@@ -8,14 +8,14 @@ __all__ = "trace", "traced", "log", "track"
 PRETTY = None
 
 
-if __debug__ and conf.DEBUG_TRACING:
+if __debug__ and conf.TRACE:
 
     logging.basicConfig(
         level=logging.DEBUG,
         format="%(message)s",
     )
 
-    traced = lambda at, /, *args, **kwds: logging.debug(*args, **kwds) if conf.DEBUG_TRACING > at else None  # noqa
+    traced = lambda at, /, *args, **kwds: logging.debug(*args, **kwds) if conf.TRACE > at else None  # noqa
     trace = lambda *args, **kwds: traced(0, *args, **kwds)
 
 else:

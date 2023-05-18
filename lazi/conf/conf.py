@@ -8,14 +8,14 @@
 Use like this (recommended for package mdules):
 
 >>> from lazi.conf import conf
->>> conf.DEBUG_TRACING
+>>> conf.TRACE
 
 Or like this (recommended for client modules):
 
 >>> import lazi.conf.auto
->>> lazi.conf.DEBUG_TRACING
+>>> lazi.conf.TRACE
 >>> from lazi.conf import auto
->>> auto.DEBUG_TRACING
+>>> auto.TRACE
 
 But not like this:
 

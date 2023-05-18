@@ -134,14 +134,14 @@ class Finder(MetaPathFinder):
                 return spec
 
     def invalidate_caches(self) -> None:
-        if not conf.SOFT_INVALIDATION:
+        if not conf.INVAL_SOFT:
             while self.specs and (spec := self.specs.popitem()[1]):
                 if hasattr(spec.loader, "invalidate_caches"):
                     spec.loader.invalidate_caches(spec)
         else:
             self.specs.clear()
 
-        if conf.GARBAG_COLLECTION:
+        if conf.INVAL_GC:
             gc.collect()
 
 

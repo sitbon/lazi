@@ -57,7 +57,7 @@ class Loader(_Loader):
 
             spec.loader_state = Loader.State.CREA
 
-            if conf.FORCE_LOAD_MODULE:  # or spec.s_path is None:  # Consider whether spec is a package?
+            if conf.NO_LAZY_LOAD:  # or spec.s_path is None:  # Consider whether spec is a package?
                 self.__forc = True
 
             modules[spec.name] = target

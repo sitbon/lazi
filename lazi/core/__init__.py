@@ -9,7 +9,7 @@ conf = _conf
 lazi = __finder__
 lazy = lazi.lazy
 
-if _conf.CORE_AUTO_INSTALL:
+if _conf.CORE_AUTO:
     __finder__.__enter__()
 
 for _ in __all__:

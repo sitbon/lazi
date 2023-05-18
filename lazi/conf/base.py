@@ -4,17 +4,19 @@ __meta__ = dict(                        # Internal configuration for <root>.conf
     root="lazi",                        # - Root namespace package name.
 )                                       # See conf.py for more options.
 #
-DEBUG_TRACING: int = 0                  # Enable debug traces. Currently using levels 0-4.
+TRACE: int = 0                          # Enable debug traces. Currently using levels 0-4.
 #
-LAZI_AUTO_INSTALL: bool = True          # Automatically install when importing lazi.auto.
-CORE_AUTO_INSTALL: bool = False         # Automatically install when importing lazi.core.
-DISABLE_LOAD_HOOK: bool = False         # Disable all spec loader hooks.
-FORCE_LOAD_MODULE: bool = False         # Next call to exec_module() skips lazy loading.
-NO_STDLIB_HOOKING: bool = False         # Disable spec loader hooking for stdlib modules.
-NO_STDLIB_LAZLOAD: bool = False         # Disable lazy loading for stdlib modules (when not NO_STDLIB_HOOKING).
-SOFT_INVALIDATION: bool = False         # Keep modules in sys.modules after cache invalidation.
-GARBAG_COLLECTION: bool = (             # Enable garbage collection on cache invalidation.
-    not SOFT_INVALIDATION)              # - Only makes sense if SOFT_INVALIDATION is False.
+AUTO_AUTO: bool = True                  # Automatically install when importing lazi.auto.
+CORE_AUTO: bool = False                 # Automatically install when importing lazi.core.
+#
+NO_HOOK: bool = False                   # Disable all spec loader hooks.
+NO_HOOK_STD: bool = False               # Disable spec loader hooking for stdlib modules.
+NO_HOOK_BI: bool = False                # Disable spec loader hooking for built-in modules.
+NO_LAZY_LOAD: bool = False              # Next call to exec_module() skips lazy loading.
+#
+INVAL_SOFT: bool = False                # Keep modules in sys.modules after cache invalidation.
+INVAL_GC: bool = (not INVAL_SOFT)       # Enable garbage collection on cache invalidation.
+#                                       # - Only makes sense if INVAL_SOFT is False.
 #
 #
 CONF_NO_CACHING: bool | None = None     # Disable caching of conf vars.
@@ -25,5 +27,5 @@ CONF_NO_CACHING: bool | None = None     # Disable caching of conf vars.
 CONF_KEYS: set = {                      # Configuration keys that are allowed to be set.
     key for key in globals()            # - Can be inherited / changed, but support is untested.
     if not key.startswith("_")          # - envs.py does not support anything other than this base value,
-    and key.isupper()                   # along with __meta__["keys"].
+    and key.isupper()                   # along with __meta__["keys"] and __meta__["root"] as a prefix (TBD).
 }

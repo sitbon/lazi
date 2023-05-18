@@ -8,6 +8,7 @@ from types import ModuleType
 from typing import ForwardRef
 from importlib.machinery import ModuleSpec
 from pathlib import Path
+from functools import cached_property
 import sysconfig
 
 from lazi.conf import conf
@@ -27,8 +28,8 @@ class Spec(ModuleSpec):
     s_path: list[str] | None
     target: ModuleType | None
 
-    stdlib: bool = property(lambda self: self.origin and STDLIB_PATH in Path(self.origin).parents)
-    builtin: bool = property(lambda self: self.origin == "built-in")
+    stdlib: bool = cached_property(lambda self: self.origin and STDLIB_PATH in Path(self.origin).parents)
+    builtin: bool = cached_property(lambda self: self.origin == "built-in")
 
     _f_name = lambda self, wrap=lambda _, __: f"[{_}.]{__}": (
         wrap(parent, name) if (name := self.name) != (parent := self.parent) and parent else name
@@ -52,9 +53,9 @@ class Spec(ModuleSpec):
         self.__dict__.update(spec.__dict__)
         self.loader = finder.Loader(self) if self.hook else self.loader
 
-    @property
+    @cached_property
     def hook(self) -> bool:
-        return not conf.DISABLE_LOAD_HOOK and (
-            not self.builtin and
-            (not self.stdlib or not conf.NO_STDLIB_HOOKING)
+        return not conf.NO_HOOK and (
+            (not self.builtin or not conf.NO_HOOK_BI) and
+            (not self.stdlib or not conf.NO_HOOK_STD)
         )

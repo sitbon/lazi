@@ -12,20 +12,18 @@ No external dependencies.
 poetry add lazi
 ```
 ```shell
-DEBUG_TRACING=1 python3
+TRACE=1 python3
 ```
 ```pycon
 Python 3.11.2
 >>> import lazi.auto
-[140402520740240] +Finder refs:0 inst:0 sys:5
 >>> from django import test
-[140402520858096] <get> LAZY django[.test]
-[140402518572896] <set> LAZY django.utils[.version] [140402518571056]
-[140402518571056] <get> LAZY django.utils.version[.get_version]
-[140402518606128] <get> LAZY django.utils.regex_helper[._lazy_re_compile]
-[140402518607408] <get> LAZY django.utils.functional[.SimpleLazyObject]
+[139840712693360] LAZY >>>> [139840715383056] django[.test]
+[139840712694640] LAZY <<<< [139840712694240] django.utils[.version] = [139840712695040]
+[139840712695040] LAZY >>>> [139840712694880] [django.utils.]django.utils.version[.get_version]
+[139840712696720] LAZY >>>> [139840712696000] [django.utils.]django.utils.regex_helper[._lazy_re_compile]
+[139840712697680] LAZY >>>> [139840712697280] [django.utils.]django.utils.functional[.SimpleLazyObject]
 >>> test.TestCase
-[140402519121472] <get> LAZY django.test[.TestCase]
 # ... A lot of output ...
 <class 'django.test.testcases.TestCase'>
 >>> _
@@ -72,7 +70,8 @@ with the caveat that some variables may have already been used by
 
 ```python
 from lazi.conf import conf
-conf.DEBUG_TRACING = 1
+
+conf.TRACE = 1
 import lazi.auto
 # ...
 ```
