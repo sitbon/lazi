@@ -4,8 +4,10 @@ __meta__ = dict(                        # Internal configuration for <root>.conf
     root="lazi",                        # - Root namespace package name.
 )                                       # See conf.py for more options.
 #
+#
 TRACE: int = 0                          # Enable debug traces. Currently using levels 0-4.
-#                                       # - Tracing relies on __debug__ and asserts, so -O will disable completely.
+#                                       # - Tracing relies on __debug__ and asserts, so `python -O` will disable completely.
+#
 NO_LAZY: int = 0                        # Hook loaders, but skip lazy loading.
 #                                       # - 0: Lazy load all modules.
 #                                       # - 1: Skip lazy loading.
@@ -19,9 +21,8 @@ NO_HOOK_BI: bool = False                # Disable spec loader hooking for built-
 AUTO_AUTO: bool = True                  # Automatically install when importing lazi.auto.
 CORE_AUTO: bool = False                 # Automatically install when importing lazi.core.
 #
-INVAL_SOFT: bool = False                # Keep modules in sys.modules after cache invalidation.
-INVAL_GC: bool = (not INVAL_SOFT)       # Enable garbage collection on cache invalidation.
-#                                       # - Only makes sense if INVAL_SOFT is False.
+CONTEXT_INVALIDATION: bool = False      # Call invalidate_caches() when exiting a `with Finder()` statement.
+#
 #
 #
 CONF_NO_CACHING: bool | None = None     # Disable caching of conf vars.

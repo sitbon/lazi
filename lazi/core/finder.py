@@ -26,23 +26,18 @@ from .module import Module
 
 __all__ = "Finder", "__finder__"
 
-INVAL_SOFT = conf.INVAL_SOFT
-INVAL_GC = conf.INVAL_GC
-
 
 class Finder(MetaPathFinder):
     Spec: type[Spec] = Spec
     Loader: type[Loader] = Loader
     Module: type[Module] = Module
 
-    __finders__: list[Finder] = []
-    __stack__: list[Finder] = []
-
-    specs: dict[str, Spec]
-    __busy: bool = False
-    __refs: int = 0; refs = property(lambda self: self.__refs)  # noqa
-
     meta_path = classproperty(lambda cls: (_ for _ in sys.meta_path if isinstance(_, cls)))
+    __finders__: list[Finder] = []
+
+    __refs: int = 0
+    refs = property(lambda self: self.__refs)
+    specs: dict[str, Spec]
 
     def __init__(self):
         assert None is debug.traced(3, f"[{oid(self)}] INIT {self.__class__.__name__} count:{len(self.__finders__)}")
@@ -50,25 +45,24 @@ class Finder(MetaPathFinder):
         self.specs = {}
 
     def __del__(self):
+        if self in self.__finders__:
+            self.__finders__.remove(self)
         try:
-            if self in self.__finders__:
-                self.__finders__.remove(self)
-                self.invalidate_caches()
+            self.invalidate_caches()
         except Exception as e:
-            assert None is debug.info(
+            self.specs.clear()
+            assert None is debug.exception(
                 f"[{oid(self)}] DEL! {self.__class__.__name__} !!!! {type(e).__name__}: {e}"
             )
 
     def __enter__(self) -> Finder:
-        if self not in sys.meta_path:
-            assert self.__refs == 0, self.__refs
+        if self.__refs == 0:
             assert None is debug.traced(
                 2,
                 f"[{oid(self)}] HOOK {self.__class__.__name__} refs:{self.__refs} "
                 f"inst:{len(list(self.meta_path))} sys:{len(sys.meta_path)} "
             )
             sys.meta_path.insert(0, self)
-            self.__stack__.append(self)
 
         self.__refs += 1
         return self
@@ -77,9 +71,9 @@ class Finder(MetaPathFinder):
         self.__refs = max(self.__refs - 1, 0)
 
         if self.__refs == 0 and self in sys.meta_path:
-            pop = self.__stack__.pop()
-            assert pop is self, (pop, self)
             sys.meta_path.remove(self)
+            if conf.CONTEXT_INVALIDATION:
+                self.invalidate_caches()
 
         assert None is debug.traced(
             2,
@@ -92,43 +86,31 @@ class Finder(MetaPathFinder):
             return import_module(name, package)
 
     def find_spec(self, name: str, path: list[str] | None = None, target: ModuleType | None = None) -> Spec | None:
-        assert self in self.__stack__, (self, self.__stack__)
-
-        if self.__busy or self.__stack__[-1] != self:
-            return None
 
         assert None is debug.traced(
             4 if target is None else 1,
-            f"[{oid(self)}] SPEC FIND {name} {'' if path is not None else '*'}"
+            f"[{oid(self)}] SPEC FIND {name}"
         )
 
         if (spec := self.specs.get(name)) is not None:
-            assert spec.finder is self, (spec.finder, self)
-            if path is not None:
-                spec.path = path
-            if target is not None:
-                spec.target = target
+            assert None is debug.traced(
+                4 if target is None else 1,
+                f"[{oid(self)}] SPEC FOUN {name}"
+            )
             return spec
 
         if (spec := self._find_spec(name, path, target)) is not None:
-
-            if not isinstance(spec, self.Spec):
-                spec = self.specs[name] = self.Spec(self, spec, path, target)
-            else:
-                if path is not None:
-                    spec.path = path
-                if target is not None:
-                    spec.target = target
+            spec = self.specs[name] = self.Spec(self, spec, path, target)
 
             assert None is debug.traced(
                 1,
                 f"[{oid(self)}] FIND " +
                 ((Path(c).suffix[1:] if (c := spec.cached) else Path(o).suffix[1:] if (o := spec.origin) else '?') +
                     f"{'S' if spec.stdlib else ''}{'B' if spec.builtin else ''}").ljust(5) +
-                f"{spec.f_name} {'*' if path is None else ''}"
+                f"{spec.f_name} {'?' if spec.loader is None else ''}"
             )
 
-            return spec
+        return spec
 
     def _find_spec(self, name: str, path: list[str] | None, target: ModuleType | None) -> ModuleSpec | None:
         for finder in (_ for _ in sys.meta_path if _ is not self):
@@ -136,15 +118,9 @@ class Finder(MetaPathFinder):
                 return spec
 
     def invalidate_caches(self) -> None:
-        if not INVAL_SOFT:
-            while self.specs and (spec := self.specs.popitem()[1]):
-                if hasattr(spec.loader, "invalidate_caches"):
-                    spec.loader.invalidate_caches()
-        else:
-            self.specs.clear()
-
-        if INVAL_GC:
-            gc.collect()
+        while self.specs:
+            if hasattr(loader := self.specs.popitem()[1].loader, "invalidate_caches"):
+                loader.invalidate_caches()
 
 
 __finder__: Finder = Finder()

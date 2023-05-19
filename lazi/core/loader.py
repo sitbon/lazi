@@ -27,6 +27,7 @@ TRACE = conf.TRACE
 class Loader(_Loader):
     spec: Spec
     loader: _Loader
+    module: Module | None = None
 
     __busy: bool = False
     __forc: bool = False
@@ -66,24 +67,25 @@ class Loader(_Loader):
 
         try:
             module = spec.target if spec.target is not None else self.loader.create_module(spec)
+            # module = self.module if module is None else module
             module = ModuleType(spec.name) if module is None else module
             module = spec.finder.Module(spec, module) if not isinstance(module, spec.finder.Module) else module
 
             spec.loader_state = Loader.State.CREA
 
-            if NO_LAZY:  # or spec.s_path is None:  # Consider whether spec is a (namespace?) package?
+            if NO_LAZY:
                 self.__forc = True
-                if NO_LAZY >= 2 and module is not spec.target:
+
+                if NO_LAZY >= 2:
                     module = spec.target
+
                 if NO_LAZY >= 3:
                     spec.loader_state = None
                     module.__loader__ = self.loader
                     spec.loader = self.loader
                     spec.target = None
 
-            modules[spec.name] = module  # TODO: Determine where internals are doing this already.
-            #                            # - Might also pass a flag down from Finder.lazy() to indicate non-global import.
-
+            self.module = module
             return module
 
         finally:
@@ -101,6 +103,7 @@ class Loader(_Loader):
         in_sys = name in modules
 
         assert state in (Loader.State.CREA, Loader.State.LAZY), state
+        assert module is self.module, (module, self.module)
 
         if (mod := modules.get(name)) is not module:
             if in_sys:
@@ -165,21 +168,25 @@ class Loader(_Loader):
             if mod is not None and mod is not spec.target:
                 spec.target = mod
 
-    def invalidate_caches(self) -> None:
+    def invalidate_caches(self, keep: bool = False) -> None:
         spec = self.spec
+        mod = self.module
 
-        if (mod := modules.get(spec.name)) is spec.target and mod is not None:
-            del modules[spec.name]
+        if (mod_sys := modules.get(spec.name, object())) is mod or mod_sys is spec.target:
+            modules.pop(spec.name)
+            if keep:
+                modules[spec.name] = spec.target if spec.target is not None else mod if mod is not None else mod_sys
 
         assert None is debug.traced(
             2,
             f"[{oid(mod) if mod is not None else '*'*15}] "
-            f"{spec.loader_state} DEAD [{oid(spec.target) if spec.target else '*'*15}] {spec.f_name}"
+            f"{spec.loader_state} DEAD [{oid(spec.target) if spec.target is not None else '*'*15}] {spec.f_name} "
         )
 
         spec.loader = self.loader
         spec.loader_state = None  # type: ignore
         spec.target = None
         self.__forc = False
+        self.module = None
         self.spec = None  # type: ignore
         self.loader = None  # type: ignore
