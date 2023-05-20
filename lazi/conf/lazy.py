@@ -14,6 +14,6 @@ LAZY: dict[str, int | str] = {
 
     r"^pandas\.core\.": "LOAD",
 
-    r"^requests|^certifi|^presto": "LOAD",
+    r"^requests\.utils|^certifi": "UNLO",
 
 }
