@@ -7,7 +7,7 @@ __all__ = (
 
 conf = _conf
 lazi = __finder__
-lazy = lazi.lazy
+lazy = Finder.lazy
 
 if _conf.CORE_AUTO:
     __finder__.__enter__()

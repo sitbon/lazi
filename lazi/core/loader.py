@@ -12,16 +12,12 @@ from typing import ForwardRef
 from enum import IntEnum
 from importlib.abc import Loader as _Loader
 
-from lazi.conf import conf
 from lazi.util import debug, oid
 
 __all__ = "Loader",
 
 Spec = ForwardRef("Spec")
 Module = ForwardRef("Module")
-
-NO_LAZY = conf.NO_LAZY
-TRACE = conf.TRACE
 
 
 class Loader(_Loader):
@@ -76,13 +72,13 @@ class Loader(_Loader):
 
             spec.loader_state = Loader.State.CREA
 
-            if NO_LAZY:
+            if spec.level > 0:
                 self.__forc = True
 
-                if NO_LAZY >= 2:
+                if spec.level >= 2:
                     module = spec.target
 
-                if NO_LAZY >= 3:
+                if spec.level >= 3:
                     spec.loader_state = None
                     module.__loader__ = self.loader
                     spec.loader = self.loader

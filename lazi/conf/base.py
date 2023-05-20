@@ -9,10 +9,13 @@ TRACE: int = 0                          # Enable debug traces. Currently using l
 #                                       # - Tracing relies on __debug__ and asserts, so `python -O` will disable completely.
 #
 NO_LAZY: int = 0                        # Hook loaders, but skip lazy loading.
-#                                       # - 0: Lazy load all modules.
+#                                       # - 0: Lazy load all modules. [NB: New option 0.5 WIP - Unhook mod after lazy attr load.]
 #                                       # - 1: Skip lazy loading.
 #                                       # - 2: Skip lazy loading, and unwrap the module as well.
 #                                       # - 3: Skip lazy loading, and unhook the loader as well.
+#
+LAZY: dict[str, int | str] = {}         # Specify loading behavior for specific modules (regex name -> NO_LAZY level).
+#                                       # - Currently, `conf` does not merge dicts, so this must be set from one module only.
 #
 NO_HOOK: bool = False                   # Disable all spec loader hooks.
 NO_HOOK_STD: bool = False               # Disable spec loader hooking for stdlib modules.

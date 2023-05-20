@@ -9,6 +9,7 @@ from typing import ForwardRef
 from importlib.machinery import ModuleSpec
 from pathlib import Path
 from functools import cached_property
+from enum import IntEnum
 import sysconfig
 
 from lazi.conf import conf
@@ -20,12 +21,12 @@ Loader = ForwardRef("Loader")
 
 STDLIB_PATH = Path(sysconfig.get_path("stdlib"))  # Preload sysconfig data.
 
-NO_HOOK = conf.NO_HOOK
-NO_HOOK_BI = conf.NO_HOOK_BI
-NO_HOOK_STD = conf.NO_HOOK_STD
-
 
 class Spec(ModuleSpec):
+    NO_HOOK = conf.NO_HOOK
+    NO_HOOK_BI = conf.NO_HOOK_BI
+    NO_HOOK_STD = conf.NO_HOOK_STD
+
     finder: Finder
     loader: Loader
     s_path: list[str] | None
@@ -42,12 +43,36 @@ class Spec(ModuleSpec):
 
     is_package: bool = cached_property(lambda self: self.submodule_search_locations is not None)
 
-    def __init__(self, finder: Finder, spec: ModuleSpec, path: list[str] | None = None, target: ModuleType | None = None):
+    class Level(IntEnum):
+        __str__ = lambda self: self.name
+        NONE = -1
+        LAZY = 0
+        LOAD = 1
+        UNMO = 2
+        UNLO = 3
+
+        @classmethod
+        def get(cls, level: str | int) -> Spec.Level:
+            if isinstance(level, str):
+                return cls[level.upper()]
+            return cls(level)
+
+    level: Level
+
+    def __init__(
+            self,
+            finder: Finder,
+            spec: ModuleSpec,
+            path: list[str] | None,
+            target: ModuleType | None,
+            level: Level
+    ):
         assert spec.loader is not None, "ModuleSpec.loader is None"
 
         self.finder = finder
         self.s_path = path
         self.target = target
+        self.level = level
 
         super().__init__(
             name=spec.name,
@@ -62,7 +87,8 @@ class Spec(ModuleSpec):
 
     @cached_property
     def hook(self) -> bool:
-        return not NO_HOOK and (
-            (not self.builtin or not NO_HOOK_BI) and
-            (not self.stdlib or not NO_HOOK_STD)
+        return not self.NO_HOOK and (
+            (self.level > Spec.Level.NONE) and
+            (not self.builtin or not self.NO_HOOK_BI) and
+            (not self.stdlib or not self.NO_HOOK_STD)
         )

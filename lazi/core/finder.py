@@ -8,7 +8,6 @@ Inspirations:
 """
 from __future__ import annotations
 
-import gc
 import sys
 import atexit
 from types import ModuleType
@@ -16,6 +15,7 @@ from importlib.abc import MetaPathFinder
 from importlib.machinery import ModuleSpec
 from importlib import import_module
 from pathlib import Path
+import re
 
 from lazi.conf import conf
 from lazi.util import classproperty, debug, oid
@@ -32,6 +32,10 @@ class Finder(MetaPathFinder):
     Loader: type[Loader] = Loader
     Module: type[Module] = Module
 
+    NO_LAZY: int = conf.NO_LAZY
+    LAZY: dict[str, int | str] = conf.LAZY
+    CONTEXT_INVALIDATION: bool = conf.CONTEXT_INVALIDATION
+
     meta_path = classproperty(lambda cls: (_ for _ in sys.meta_path if isinstance(_, cls)))
     __finders__: list[Finder] = []
 
@@ -39,10 +43,15 @@ class Finder(MetaPathFinder):
     refs = property(lambda self: self.__refs)
     specs: dict[str, Spec]
 
-    def __init__(self):
+    def __init__(self, **CONF):
         assert None is debug.traced(3, f"[{oid(self)}] INIT {self.__class__.__name__} count:{len(self.__finders__)}")
         self.__finders__.append(self)
         self.specs = {}
+
+        for k, v in CONF.items():
+            if not k.isupper() or k.startswith("_"):
+                raise ValueError(f"Invalid configuration key: {k}")
+            setattr(self, k, v)
 
     def __del__(self):
         if self in self.__finders__:
@@ -72,7 +81,7 @@ class Finder(MetaPathFinder):
 
         if self.__refs == 0 and self in sys.meta_path:
             sys.meta_path.remove(self)
-            if conf.CONTEXT_INVALIDATION:
+            if self.CONTEXT_INVALIDATION:
                 self.invalidate_caches()
 
         assert None is debug.traced(
@@ -81,8 +90,13 @@ class Finder(MetaPathFinder):
             f"inst:{len(list(self.meta_path))} sys:{len(sys.meta_path)} "
         )
 
-    def lazy(self, name: str, package: str | None = None) -> ModuleType:
-        with self:
+    @classmethod
+    def lazy(cls, name: str, package: str | None = None, **CONF) -> ModuleType:
+        if CONF:
+            with cls(**CONF):
+                return import_module(name, package)
+
+        with __finder__:
             return import_module(name, package)
 
     def find_spec(self, name: str, path: list[str] | None = None, target: ModuleType | None = None) -> Spec | None:
@@ -100,7 +114,7 @@ class Finder(MetaPathFinder):
             return spec
 
         if (spec := self._find_spec(name, path, target)) is not None:
-            spec = self.specs[name] = self.Spec(self, spec, path, target)
+            spec = self.specs[name] = self.Spec(self, spec, path, target, self._get_level(name))
 
             assert None is debug.traced(
                 1,
@@ -116,6 +130,12 @@ class Finder(MetaPathFinder):
         for finder in (_ for _ in sys.meta_path if _ is not self):
             if (spec := finder.find_spec(name, path, target)) is not None:
                 return spec
+
+    def _get_level(self, full_name: str) -> Spec.Level:
+        for name, level in self.LAZY.items():
+            if re.match(name, full_name):
+                return Spec.Level.get(level)
+        return Spec.Level(self.NO_LAZY)
 
     def invalidate_caches(self) -> None:
         while self.specs:
