@@ -37,17 +37,20 @@ class Loader(_Loader):
         INIT = 0
         CREA = 1
         LAZY = 2
-        EXEC = 3
-        LOAD = 4
-        DEAD = 5
+        PART = 3
+        EXEC = 4
+        LOAD = 5
+        DEAD = 6
 
     class Exception(ImportError):
         pass
 
     class Error(Exception):
+        ldr: Loader
         exc: BaseException
 
-        def __init__(self, exc: BaseException, msg: str, /):
+        def __init__(self, ldr: Loader, exc: BaseException, msg: str, /):
+            self.ldr = ldr
             self.exc = exc
             super().__init__(msg)
 
@@ -143,7 +146,8 @@ class Loader(_Loader):
             )
 
         except Exception as e:
-            spec.loader_state = nexts = Loader.State.DEAD
+            spec.loader_state = nexts = Loader.State.DEAD if not isinstance(e, Loader.Exception) else Loader.State.PART
+
             assert None is debug.traced(
                 0 if not isinstance(e, ImportError) else 1,
                 msg :=
@@ -151,8 +155,9 @@ class Loader(_Loader):
                 f"{type(e).__name__ if not isinstance(e, ImportError) else ''}"
             )
 
-            if not isinstance(e, Loader.Exception):
-                raise Loader.Error(e, f"Error loading {name_}" if not __debug__ else msg) from e
+            if nexts is Loader.State.DEAD:
+                modules.pop(name, None)
+                raise Loader.Error(self, e, f"Error loading {name_}" if not __debug__ else msg) from e
 
             raise
 
