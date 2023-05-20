@@ -45,13 +45,14 @@ class Finder(MetaPathFinder):
 
     def __init__(self, **CONF):
         assert None is debug.traced(3, f"[{oid(self)}] INIT {self.__class__.__name__} count:{len(self.__finders__)}")
-        self.__finders__.append(self)
-        self.specs = {}
 
         for k, v in CONF.items():
             if not k.isupper() or k.startswith("_"):
                 raise ValueError(f"Invalid configuration key: {k}")
             setattr(self, k, v)
+
+        self.specs = {}
+        self.__finders__.append(self)
 
     def __del__(self):
         if self in self.__finders__:
