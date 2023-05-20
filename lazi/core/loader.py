@@ -104,6 +104,8 @@ class Loader(_Loader):
         assert state in (Loader.State.CREA, Loader.State.LAZY), state
         assert module is self.module, (module, self.module)
 
+        # TODO: Handle state == LOAD -- called on reload().
+
         if (mod := modules.get(name)) is not module:
             if in_sys:
                 assert None is debug.trace(
