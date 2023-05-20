@@ -144,10 +144,11 @@ class Loader(_Loader):
 
         except Exception as e:
             spec.loader_state = nexts = Loader.State.DEAD
-            assert None is debug.trace(
+            assert None is debug.traced(
+                0 if not isinstance(e, ImportError) else 1,
                 msg :=
                 f"[{oid(module)}] {state} {nexts} [{oid(target) if target is not None else '*'*15}] {name_} !!!! "
-                f"{type(e).__name__ if not isinstance(e, Loader.Exception) else ''}"
+                f"{type(e).__name__ if not isinstance(e, ImportError) else ''}"
             )
 
             if not isinstance(e, Loader.Exception):
