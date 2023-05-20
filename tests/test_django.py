@@ -12,18 +12,22 @@ def test_django_version_lazy():
         debug.trace(f"test_django_version_lazy: ^- VERSION: {version}")
         assert isinstance(version, tuple), version
 
+    finder.invalidate_caches()
+
 
 def test_django_version_import():
     from lazi.util import debug
     from lazi.core.finder import Finder
 
-    with Finder():
+    with Finder() as finder:
         debug.trace("test_django_version_import: import django ->")
         import django
         debug.trace("test_django_version_import: ^- import django")
         version = django.VERSION
         debug.trace(f"test_django_version_import: ^- VERSION: {version}")
         assert isinstance(version, tuple), version
+
+    finder.invalidate_caches()
 
 
 def test_asgiref():
@@ -34,3 +38,5 @@ def test_asgiref():
         debug.trace("-> from asgiref.sync import sync_to_async ->")
         from asgiref.sync import sync_to_async
         debug.trace("^- from asgiref.sync import sync_to_async -^")
+
+    lazi.invalidate_caches()

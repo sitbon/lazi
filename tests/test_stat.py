@@ -17,6 +17,8 @@ def test_stat_django_test():
             TestCase = dt.TestCase
             info(Stat())
 
+    lazi.invalidate_caches()
+
 
 # @pytest.mark.skip(reason="not working")
 def test_stat_presto():
@@ -26,14 +28,17 @@ def test_stat_presto():
     from lazi.core import lazi
 
     with lazi:
+        info(Stat())
+
         with track("import presto"):
-            info(Stat())
-            from presto import Presto
+            import presto
             info(Stat())
 
-        with track("p = Presto('https://httpbin.org')"):
-            p = Presto("https://httpbin.org")
+        with track("p = presto.Presto('https://httpbin.org')"):
+            p = presto.Presto("https://httpbin.org")
             info(Stat())
+
+    lazi.invalidate_caches()
 
 
 def test_stat_nolazi_presto():

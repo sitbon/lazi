@@ -9,3 +9,5 @@ def test_pygments_formatter():
             info(Stat())
             from pygments.formatters.terminal import TerminalFormatter
             info(Stat())
+
+    lazi.invalidate_caches()

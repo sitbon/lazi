@@ -4,7 +4,7 @@ def test_rich_fn_import_ctx():
     from lazi.util import debug
     from lazi.core.finder import Finder
 
-    with Finder():
+    with Finder() as finder:
         debug.trace("-> setup() ->")
 
         def setup():
@@ -22,3 +22,5 @@ def test_rich_fn_import_ctx():
 
         setup()
         debug.trace("^- setup() -^")
+
+    finder.invalidate_caches()

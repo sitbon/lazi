@@ -8,5 +8,6 @@ def test_finder_lazy():
         version = django.VERSION
         test = lazi.lazy("django.test")
         TestCase = test.TestCase
+        lazi.invalidate_caches()
 
     del lazi

@@ -32,8 +32,6 @@ include = [
 python = "^3.11"
 
 
-[tool.poetry.group.dev]
-optional = true
 [tool.poetry.group.dev.dependencies]
 django = "^4"
 requests = "^2"

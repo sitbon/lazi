@@ -16,4 +16,6 @@ LAZY: dict[str, int | str] = {
 
     r"^requests\.utils|^certifi": "UNLO",
 
+    r"^django\.(db\.models.*|conf.*|utils.*)": "UNLO",
+
 }

@@ -11,3 +11,5 @@ def test_asyncio():
         debug.trace("-> coroutines = asyncio.coroutines ->")
         coroutines = asyncio.coroutines
         debug.trace("^- coroutines = asyncio.coroutines -^")
+
+    lazi.invalidate_caches()
