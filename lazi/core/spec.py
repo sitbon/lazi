@@ -39,7 +39,8 @@ class Spec(ModuleSpec):
         wrap(parent, name) if (name := self.name) != (parent := self.parent) and parent else name
     )
 
-    f_name: str | None = cached_property(lambda self: self._f_name())
+    f_name: str | None = cached_property(lambda self: self._f_name())  # Formatted name.
+    p_name: str | None = cached_property(lambda self: self._f_name(lambda _, __: f"{_}.{__}"))  # Path (full) name.
 
     is_package: bool = cached_property(lambda self: self.submodule_search_locations is not None)
 
@@ -65,14 +66,12 @@ class Spec(ModuleSpec):
             spec: ModuleSpec,
             path: list[str] | None,
             target: ModuleType | None,
-            level: Level
     ):
         assert spec.loader is not None, "ModuleSpec.loader is None"
 
         self.finder = finder
         self.s_path = path
         self.target = target
-        self.level = level
 
         super().__init__(
             name=spec.name,
@@ -83,6 +82,8 @@ class Spec(ModuleSpec):
         )
 
         self.__dict__.update(spec.__dict__)
+
+        self.level = finder.get_level(self.p_name)
         self.loader = finder.Loader(self) if self.hook else self.loader
 
     @cached_property

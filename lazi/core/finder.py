@@ -114,7 +114,7 @@ class Finder(MetaPathFinder):
             return spec
 
         if (spec := self._find_spec(name, path, target)) is not None:
-            spec = self.specs[name] = self.Spec(self, spec, path, target, self._get_level(name))
+            spec = self.specs[name] = self.Spec(self, spec, path, target)
 
             assert None is debug.traced(
                 1,
@@ -131,7 +131,7 @@ class Finder(MetaPathFinder):
             if (spec := finder.find_spec(name, path, target)) is not None:
                 return spec
 
-    def _get_level(self, full_name: str) -> Spec.Level:
+    def get_level(self, full_name: str) -> Spec.Level:
         for name, level in self.LAZY.items():
             if re.match(name, full_name):
                 return Spec.Level.get(level)
