@@ -100,7 +100,6 @@ class Finder(MetaPathFinder):
             return import_module(name, package)
 
     def find_spec(self, name: str, path: list[str] | None = None, target: ModuleType | None = None) -> Spec | None:
-
         assert None is debug.traced(
             4 if target is None else 1,
             f"[{oid(self)}] SPEC FIND {name}"
@@ -127,7 +126,7 @@ class Finder(MetaPathFinder):
         return spec
 
     def _find_spec(self, name: str, path: list[str] | None, target: ModuleType | None) -> ModuleSpec | None:
-        for finder in (_ for _ in sys.meta_path if _ is not self):
+        for finder in (_ for _ in sys.meta_path if not isinstance(_, self.__class__)):
             if (spec := finder.find_spec(name, path, target)) is not None:
                 return spec
 
