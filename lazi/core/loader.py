@@ -56,7 +56,7 @@ class Loader(_Loader):
         spec.loader_state = Loader.State.INIT
 
     def create_module(self, spec: Spec | None = None):
-        spec = spec if spec is not None else self.spec
+        spec: Spec = spec if spec is not None else self.spec
         assert spec.loader is self, (spec.loader, self)
 
         if self.__busy:
@@ -72,13 +72,13 @@ class Loader(_Loader):
 
             spec.loader_state = Loader.State.CREA
 
-            if spec.level > 0:
-                self.__forc = True
+            if spec.level > spec.Level.LAZY:
+                self.__forc = spec.level > spec.level.SWAP
 
-                if spec.level >= 2:
+                if spec.level >= spec.Level.UNMO:
                     module = spec.target
 
-                if spec.level >= 3:
+                if spec.level >= spec.Level.UNLO:
                     spec.loader_state = None
                     module.__loader__ = self.loader
                     spec.loader = self.loader
@@ -105,6 +105,7 @@ class Loader(_Loader):
         assert module is self.module, (module, self.module)
 
         # TODO: Handle state == LOAD -- called on reload().
+        # - Requires sync of self.module, which is not updated even now.
 
         if (mod := modules.get(name)) is not module:
             if in_sys:

@@ -67,14 +67,25 @@ class Module(ModuleType):
         if attr in MODULE_SPEC_ATTR_MAP:
             return target.__getattribute__(attr)
 
-        if spec.loader_state.value <= spec.loader.State.LAZY.value:
+        swap = False
+
+        if spec.loader_state <= spec.loader.State.LAZY:
             assert None is debug.trace(
                 f"[{oid(self)}] {spec.loader_state} >>>> [{oid(target) if target is not None else '*' * 15}] "
                 f"{spec.f_name} {attr}"
             )
             spec.loader.exec_module(self, True)
+            swap = spec.level >= spec.Level.SWAP
 
-        return spec.target.__getattribute__(attr)  # NB: Don't use `target` here, as it may have changed.
+        valu = spec.target.__getattribute__(attr)  # NB: Don't use `target` here, as it may have changed.
+
+        if swap:
+            self_dict = super().__getattribute__("__dict__")
+            target_dict = spec.target.__getattribute__("__dict__")
+            self_dict.update(target_dict)
+            super().__setattr__("__class__", ModuleType)
+
+        return valu
 
     def __setattr__(self, attr, valu):
         if attr == "__spec__":
@@ -92,7 +103,9 @@ class Module(ModuleType):
         if (target := getattr(spec, "target", None)) is None:
             return super().__setattr__(attr, valu)
 
-        if attr not in SETATTR_PASS and spec.loader_state.value <= spec.loader.State.LAZY.value:
+        swap = False
+
+        if attr not in SETATTR_PASS and spec.loader_state <= spec.loader.State.LAZY:
             assert None is debug.trace(
                 f"[{oid(self)}] {spec.loader_state} >>>> [{oid(target) if target is not None else '*' * 15}] "
                 f"{spec.f_name} {attr} = [{oid(valu)}]"
@@ -100,5 +113,12 @@ class Module(ModuleType):
 
             target.__setattr__(attr, valu)  # Preload the variable? Yes: Fixes stdlib (asyncio.coroutines) errors in README.md.
             spec.loader.exec_module(self, True)
+            swap = spec.level >= spec.Level.SWAP
 
         spec.target.__setattr__(attr, valu)  # NB: Don't use `target` here, as it may have changed.
+
+        if swap:
+            self_dict = super().__getattribute__("__dict__")
+            target_dict = spec.target.__getattribute__("__dict__")
+            self_dict.update(target_dict)
+            super().__setattr__("__class__", ModuleType)

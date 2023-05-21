@@ -32,7 +32,7 @@ class Finder(MetaPathFinder):
     Loader: type[Loader] = Loader
     Module: type[Module] = Module
 
-    NO_LAZY: int = conf.NO_LAZY
+    NO_LAZY: Spec.Level = Spec.Level(conf.NO_LAZY)
     LAZY: dict[str, int | str] = conf.LAZY
     CONTEXT_INVALIDATION: bool = conf.CONTEXT_INVALIDATION
 
@@ -118,9 +118,7 @@ class Finder(MetaPathFinder):
 
             assert None is debug.traced(
                 1,
-                f"[{oid(self)}] FIND " +
-                ((Path(c).suffix[1:] if (c := spec.cached) else Path(o).suffix[1:] if (o := spec.origin) else '?') +
-                    f"{'S' if spec.stdlib else ''}{'B' if spec.builtin else ''}").ljust(5) +
+                f"[{oid(self)}] FIND {spec.source_tag.ljust(4)} "
                 f"{spec.f_name} {'?' if spec.loader is None else ''}"
             )
 
@@ -134,8 +132,8 @@ class Finder(MetaPathFinder):
     def get_level(self, full_name: str) -> Spec.Level:
         for name, level in self.LAZY.items():
             if re.match(name, full_name):
-                return Spec.Level.get(level)
-        return Spec.Level(self.NO_LAZY)
+                return max(Spec.Level.get(level), self.NO_LAZY)
+        return self.NO_LAZY
 
     def invalidate_caches(self) -> None:
         while self.specs:
