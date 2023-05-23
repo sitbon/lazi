@@ -1,7 +1,9 @@
 """Map of module name regexes to lazy loading modes.
 
-Mode can either be an int, corresponding to `base.NO_LAZI`, or a string
+Mode can either be an int, corresponding to a `base.NO_LAZY` value, or a string
 corresponding to the same `lazi.core.spec.Spec.Level` names:
+
+# NONE - -1: Disable lazy loading (same effect as NO_HOOK).
 # LAZY - 0: Lazy load all modules.
 # SWAP - 1: Swap out (un-proxy) modules after lazy loading.
 # LOAD - 2: Skip lazy loading.
@@ -12,7 +14,7 @@ corresponding to the same `lazi.core.spec.Spec.Level` names:
 
 LAZY: dict[str, int | str] = {
 
-    r"^pandas\.core\.": "UNLO",
+    r"^pandas\.core\.|^pandas\._config": "UNLO",
 
     # r"^pandas": "LOAD",
 
