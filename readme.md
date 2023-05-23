@@ -34,7 +34,7 @@ And with `TRACE=3`:
 [7F4C28B37350] HOOK Finder refs:0 inst:0 sys:5 
 >>> import django
 [7F4C28B37350] FIND pyc  django *
-[7F4C289BD5D0] CREA LAZY [7F4C28C4A160] django ....  # This is where the a module is set up.
+[7F4C289BD5D0] CREA LAZY [7F4C28C4A160] django ....  # This is where a lazy module is set up.
 >>> django.VERSION
 [7F4C289BD5D0] LAZY >>>> [7F4C28C4A160] django VERSION
 [7F4C289BD5D0] LAZY EXEC [7F4C28C4A160] django >>>> 
