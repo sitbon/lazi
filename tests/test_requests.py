@@ -1,3 +1,4 @@
+import pytest
 
 
 def test_requests_parse_dict_header():
@@ -12,6 +13,7 @@ def test_requests_parse_dict_header():
     finder.invalidate_caches()
 
 
+@pytest.mark.skip(reason="Not using presto to remove Python 3.11 dependency.")
 def test_requests_presto_import():
     from lazi.util import debug
     from lazi.core.finder import Finder

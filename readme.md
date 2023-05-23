@@ -4,7 +4,7 @@ An easy way to implement and track lazy imports globally.
 
 No external dependencies.
 
-**Requres Python 3.11.**
+**Requires Python >= 3.10, and 3.11 is HIGHLY Recommended.**
 
 ## Usage:
 
@@ -34,7 +34,7 @@ And with `TRACE=3`:
 [7F4C28B37350] HOOK Finder refs:0 inst:0 sys:5 
 >>> import django
 [7F4C28B37350] FIND pyc  django *
-[7F4C289BD5D0] CREA LAZY [7F4C28C4A160] django ....  # This is where the lazy module is set up.
+[7F4C289BD5D0] CREA LAZY [7F4C28C4A160] django ....  # This is where the a module is set up.
 >>> django.VERSION
 [7F4C289BD5D0] LAZY >>>> [7F4C28C4A160] django VERSION
 [7F4C289BD5D0] LAZY EXEC [7F4C28C4A160] django >>>> 
@@ -44,7 +44,7 @@ And with `TRACE=3`:
 [7F4C289BD800] CREA LAZY [7F4C289BD490] django.utils|version .... 
 [7F4C289BD080] LAZY >>>> [7F4C289BD0D0] django.utils version = [7F4C289BD800]
 [7F4C289BD080] LAZY EXEC [7F4C289BD0D0] django.utils >>>> 
-[7F4C289BD080] EXEC LOAD [7F4C289BD0D0] django.utils ++++  # This is where the lazy module is fully loaded. 
+[7F4C289BD080] EXEC LOAD [7F4C289BD0D0] django.utils ++++ 
 [7F4C289BD800] LAZY >>>> [7F4C289BD490] django.utils|version get_version
 [7F4C289BD800] LAZY EXEC [7F4C289BD490] django.utils|version >>>> 
 [7F4C28B37350] FIND pycS datetime *  # "S" means it's a stdlib module. "B" means it's a builtin module.
@@ -64,7 +64,7 @@ And with `TRACE=3`:
 [7F4C289BE4D0] EXEC LOAD [7F4C289BE3E0] django.utils|functional ++++ 
 [7F4C289BE0C0] EXEC LOAD [7F4C289BDFD0] django.utils|regex_helper ++++ 
 [7F4C289BD800] EXEC LOAD [7F4C289BD490] django.utils|version ++++ 
-[7F4C289BD5D0] EXEC LOAD [7F4C28C4A160] django ++++ 
+[7F4C289BD5D0] EXEC LOAD [7F4C28C4A160] django ++++  # This is where a lazy module is fully loaded. 
 (4, 2, 1, 'final', 0)
 >>> exit()
 [7F4C289BF830] LAZY DEAD [7F4C289BF380] copy
@@ -180,7 +180,8 @@ lazi.core.loader.Loader.Error: [7F899C139260] EXEC DEAD [7F899C1382C0] pandas.co
 _Unforunately_... This isn't something that can be worked around without outer dependency tracking, which
 generally results in entire packages getting loaded anyway.
 
-If you're more interested in just tracking imports with Lazi, use the `NO_HOOK` config variable (see below).
+If you're more interested in just tracking imports with Lazi, use the `NO_HOOK`
+or `NO_LAZY` config variables (see below and [lazi/conf/base.py](lazi/conf/base.py)).
 
 ## Configuration
 

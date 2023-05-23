@@ -14,7 +14,6 @@ from types import ModuleType
 from importlib.abc import MetaPathFinder
 from importlib.machinery import ModuleSpec
 from importlib import import_module
-from pathlib import Path
 import re
 
 from lazi.conf import conf

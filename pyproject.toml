@@ -47,7 +47,7 @@ build.sequence = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.10"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -59,14 +59,7 @@ setuptools = "^67"
 pandas = "^2"
 pytest = "^7"
 wagtail = "^5.0"
-presto-requests = "^1.3.6"
 poethepoet = "^0.20.0"
-
-[tool.poetry.group.direct]
-optional = true
-[tool.poetry.group.direct.dependencies]
-presto-requests = {git = "https://github.com/sitbon/presto"}
-
 
 [tool.pytest.ini_options]
 addopts = "-v --no-header -rA"

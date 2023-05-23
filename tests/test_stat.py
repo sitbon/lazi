@@ -20,7 +20,7 @@ def test_stat_django_test():
     lazi.invalidate_caches()
 
 
-# @pytest.mark.skip(reason="not working")
+@pytest.mark.skip(reason="Not using presto to remove Python 3.11 dependency.")
 def test_stat_presto():
     from lazi.util.debug import track, info
 
@@ -41,6 +41,7 @@ def test_stat_presto():
     lazi.invalidate_caches()
 
 
+@pytest.mark.skip(reason="Not using presto to remove Python 3.11 dependency.")
 def test_stat_nolazi_presto():
     from lazi.util.debug import track, info
 
