@@ -55,6 +55,9 @@ class Loader(_Loader):
         self.loader = spec.loader
         spec.loader_state = Loader.State.INIT
 
+    def _create_module(self) -> ModuleType | None:
+        return self.loader.create_module(self.spec)
+
     def create_module(self, spec: Spec | None = None):
         spec: Spec = spec if spec is not None else self.spec
         assert spec.loader is self, (spec.loader, self)
@@ -65,7 +68,7 @@ class Loader(_Loader):
         self.__busy = True
 
         try:
-            module = spec.target if spec.target is not None else self.loader.create_module(spec)
+            module = spec.target if spec.target is not None else self._create_module()
             # module = self.module if module is None else module
             module = ModuleType(spec.name) if module is None else module
             module = spec.finder.Module(spec, module) if not isinstance(module, spec.finder.Module) else module
