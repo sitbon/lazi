@@ -49,7 +49,11 @@ class Spec(ModuleSpec):
     @cached_property
     def source_tag(self) -> str:
         return (
-                (Path(c).suffix[1:] if (c := self.cached) else Path(o).suffix[1:] if (o := self.origin) else '?') +
+                (
+                    Path(c).suffix[1:] if (c := self.cached) else
+                    (Path(o).suffix[1:] or o[:4]) if (o := self.origin) else
+                    '?'
+                ) +
                 (
                     f"{'S' if self.stdlib else ''}{'B' if self.builtin else ''}"
                     if not self.NO_CHECK_STD_BI else ""
