@@ -176,16 +176,24 @@ class Loader(_Loader):
     def invalidate_caches(self, keep: bool = False) -> None:
         spec = self.spec
         mod = self.module
+        state = "KEEP" if keep else "None"
 
-        if (mod_sys := modules.get(spec.name, object())) is mod or mod_sys is spec.target:
+        if (mod_sys := modules.get(spec.name, none := object())) is mod or mod_sys is spec.target:
             modules.pop(spec.name)
             if keep:
-                modules[spec.name] = spec.target if spec.target is not None else mod if mod is not None else mod_sys
+                modules[spec.name] = (
+                    spec.target if spec.target is not None else
+                    mod if mod is not None else
+                    mod_sys
+                )
+        elif mod_sys is not none:
+            state = "REPL"
 
         assert None is debug.traced(
             2,
             f"[{oid(mod) if mod is not None else '*'*15}] "
-            f"{spec.loader_state} DEAD [{oid(spec.target) if spec.target is not None else '*'*15}] {spec.f_name} "
+            f"{spec.loader_state} {state} "
+            f"[{oid(spec.target) if spec.target is not None else '*'*15}] {spec.f_name} "
         )
 
         spec.loader = self.loader
